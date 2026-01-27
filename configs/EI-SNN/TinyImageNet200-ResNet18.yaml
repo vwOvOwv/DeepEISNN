@@ -1,0 +1,25 @@
+Parameters:
+  model_type: "EISNN"
+  T: 4
+  arch: "ResNet"
+  num_layers: 18
+  ei_ratio: 4
+
+  dataset: "TinyImageNet200"
+  data_path: "/home/data10T/data/public/tiny-imagenet-200"
+  log_dir: "/home/data10T/lpy/LatinSNN/logs/EISNN"
+
+  epochs: 300
+  warmup_epochs: 10
+  batch_size: 128
+  init_learning_rate: 0.001
+  learning_rate: 0.002
+  optimizer: "SGD"
+  momentum: 0.9
+  weight_decay: 0.0005
+  scheduler: "CosALR"
+  loss: "CE"
+
+  dropout: 0.
+  neuron_config:
+    tau: 2.0

@@ -1,0 +1,205 @@
+import torch
+import torch.nn as nn
+import numpy as np
+from modules.conv2d import SpikingConv2d, SpikingEiConv2d
+from modules.norm1d import SpikingEiNorm1d
+from modules.norm2d import SpikingBatchNorm2d, SpikingEiNorm2d
+from modules.linear import SpikingLinear, SpikingEiLinear
+from modules.blocks import SpikingStandardBasicBlock, SpikingStandardBottleneck, \
+SpikingEiBasicBlock, SpikingEiBottleneck
+from modules.activation import LIF
+from utils.dim import AddTemporalDim, MergeTemporalDim, SplitTemporalDim
+from typing import Any
+
+__all__ = [
+    'SpikingResNet', 'SpikingEiResNet'
+]
+
+standard_cfg = {
+    18: {'block': SpikingStandardBasicBlock, 'layers': [2, 2, 2, 2]},
+    34: {'block': SpikingStandardBasicBlock, 'layers': [3, 4, 6, 3]},
+    50: {'block': SpikingStandardBottleneck, 'layers': [3, 4, 6, 3]},
+    101: {'block': SpikingStandardBottleneck, 'layers': [3, 4, 23, 3]},
+    152: {'block': SpikingStandardBottleneck, 'layers': [3, 8, 16, 3]}
+}
+
+ei_cfg = {
+    18: {'block': SpikingEiBasicBlock, 'layers': [2, 2, 2, 2]},
+    34: {'block': SpikingEiBasicBlock, 'layers': [3, 4, 6, 3]},
+    50: {'block': SpikingEiBottleneck, 'layers': [3, 4, 6, 3]},
+    101: {'block': SpikingEiBottleneck, 'layers': [3, 4, 23, 3]},
+    152: {'block': SpikingEiBottleneck, 'layers': [3, 8, 16, 3]}
+}
+
+
+class SpikingResNet(nn.Module):
+    def __init__(self, num_layers, neuron_config: dict, T, in_channels, num_classes, 
+                 zero_init_residual=False, has_temporal_dim=False):
+        super(SpikingResNet, self).__init__()
+        self.in_channels = 64
+
+        if not has_temporal_dim:
+            self.init_expand = AddTemporalDim(T)
+        else:
+            self.init_expand = nn.Identity()
+        self.init_merge = MergeTemporalDim(T)
+        self.conv1 = SpikingConv2d(in_channels, self.in_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = SpikingBatchNorm2d(self.in_channels)
+        self.split1 = SplitTemporalDim(T)
+        self.lif1 = LIF(**neuron_config)
+        self.merge1 = MergeTemporalDim(T)
+        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = nn.Identity()
+        
+        cfg = standard_cfg[num_layers]
+        block = cfg['block']
+        layers = cfg['layers']
+
+        self.layer1 = self._make_layers(block, neuron_config, T,  64, layers[0], stride=1)
+        self.layer2 = self._make_layers(block, neuron_config, T, 128, layers[1], stride=2)
+        self.layer3 = self._make_layers(block, neuron_config, T, 256, layers[2], stride=2)
+        self.layer4 = self._make_layers(block, neuron_config, T, 512, layers[3], stride=2)
+
+        self.adaptive_avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = SpikingLinear(512 * block.expansion, num_classes)
+        self.final_split = SplitTemporalDim(T)
+
+        for m in self.modules():
+            if isinstance(m, SpikingConv2d):
+                nn.init.kaiming_normal_(m.conv.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, SpikingBatchNorm2d):
+                nn.init.constant_(m.bn.weight, 1)
+                nn.init.constant_(m.bn.bias, 0)
+
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, SpikingStandardBottleneck):
+                    nn.init.constant_(m.bn3.weight, 0)
+                elif isinstance(m, SpikingStandardBasicBlock):
+                    nn.init.constant_(m.bn2.weight, 0)
+
+    def _make_layers(self, block, neuron_config, T, out_channels, num_blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.in_channels != out_channels * block.expansion:
+            downsample = nn.Sequential(
+                SpikingConv2d(self.in_channels, out_channels * block.expansion, kernel_size=1, stride=stride, bias=False),
+                SpikingBatchNorm2d(out_channels * block.expansion),
+                SplitTemporalDim(T),
+                LIF(**neuron_config),
+                MergeTemporalDim(T)
+            )
+
+        layers = []
+        layers.append(block(self.in_channels, out_channels, neuron_config, T, stride, downsample))
+        
+        self.in_channels = out_channels * block.expansion
+        
+        for _ in range(1, num_blocks):
+            layers.append(block(self.in_channels, out_channels, neuron_config, T))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.init_expand(x)
+        x = self.init_merge(x)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.split1(x)
+        x = self.lif1(x)
+        x = self.merge1(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.adaptive_avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        x = self.final_split(x)
+
+        return x.mean(dim=0)
+
+
+class SpikingEiResNet(nn.Module):
+    def __init__(self, ei_ratio, num_layers, neuron_config: dict, T, in_channels, 
+                 num_classes, has_temporal_dim, rng, device=torch.device('cpu')):
+        super(SpikingEiResNet, self).__init__()
+        self.in_channels = 64
+        if not has_temporal_dim:
+            self.init_expand = AddTemporalDim(T)
+        else:
+            self.init_expand = nn.Identity()
+        self.init_merge = MergeTemporalDim(T)
+        self.conv1 = SpikingEiConv2d(ei_ratio, in_channels, self.in_channels, rng, 
+                                     kernel_size=3, stride=1, padding=1, bias=False, 
+                                     device=device)
+        # self.conv1 = SpikingEiConv2d(ei_ratio, in_channels, self.in_channels, rng, 
+        #                              kernel_size=7, stride=2, padding=3, bias=False, 
+        #                              device=device)
+        self.norm1 = SpikingEiNorm2d(ei_ratio, self.in_channels, 
+                                   in_channels * 3 * 3, device=device)
+        self.split1 = SplitTemporalDim(T)
+        self.lif1 = LIF(**neuron_config)
+        self.merge1 = MergeTemporalDim(T)
+        # self.maxpool = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = nn.Identity()
+        
+        cfg = ei_cfg[num_layers]
+        block = cfg['block']
+        layers = cfg['layers']
+
+        self.layer1 = self._make_layers(block, ei_ratio, neuron_config, T,  64, layers[0], rng, device, stride=1)
+        self.layer2 = self._make_layers(block, ei_ratio, neuron_config, T, 128, layers[1], rng, device, stride=2)
+        self.layer3 = self._make_layers(block, ei_ratio, neuron_config, T, 256, layers[2], rng, device, stride=2)
+        self.layer4 = self._make_layers(block, ei_ratio, neuron_config, T, 512, layers[3], rng, device, stride=2)
+
+        self.adaptive_avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = SpikingEiLinear(ei_ratio, 512 * block.expansion, num_classes, device, rng)
+        self.final_ei_norm = SpikingEiNorm1d(ei_ratio, num_classes, 512 * block.expansion, device=device, output_layer=True)
+        self.final_split = SplitTemporalDim(T)
+
+    def _make_layers(self, block, ei_ratio, neuron_config, T, out_channels, num_blocks, rng, device, stride=1):
+        downsample = None
+        if stride != 1 or self.in_channels != out_channels * block.expansion:
+            downsample = nn.Sequential(
+                SpikingEiConv2d(ei_ratio, self.in_channels, out_channels * block.expansion, rng, kernel_size=1, stride=stride, bias=False, device=device),
+                SpikingEiNorm2d(ei_ratio, out_channels * block.expansion, self.in_channels * 1 * 1, device=device),
+                SplitTemporalDim(T),
+                LIF(**neuron_config),
+                MergeTemporalDim(T)
+            )
+
+        layers = []
+        layers.append(block(self.in_channels, out_channels, ei_ratio, neuron_config, T, device, rng, stride, downsample))
+        
+        self.in_channels = out_channels * block.expansion
+        
+        for _ in range(1, num_blocks):
+            layers.append(block(self.in_channels, out_channels, ei_ratio, neuron_config, T, device, rng))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.init_expand(x)
+        x = self.init_merge(x)
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.split1(x)
+        x = self.lif1(x)
+        x = self.merge1(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.adaptive_avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        x = self.final_ei_norm(x)
+        x = self.final_split(x)
+
+        return x.mean(dim=0)

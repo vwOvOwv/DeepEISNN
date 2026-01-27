@@ -1,0 +1,22 @@
+model_type: "SNN"
+T: 4
+arch: "ResNet"
+num_layers: 18
+
+BN: True
+dropout: 0.
+neuron_config:
+  tau: 2.0
+
+dataset: "TinyImageNet"
+data_path: "/home/data10T/data/public/tiny-imagenet-200"
+log_dir: "/home/data4T1/lpy/DeepEISNN/logs/BN-SNN"
+
+epochs: 300
+batch_size: 128
+learning_rate: 0.1
+optimizer: "SGD"
+momentum: 0.9
+weight_decay: 0.0001
+scheduler: "CosALR"
+loss: "CE"
