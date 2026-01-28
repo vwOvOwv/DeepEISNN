@@ -89,19 +89,19 @@ class SpikingEiNorm2d(nn.Module):
         self.weight_ei = nn.Parameter(
             torch.ones(self.n_e, self.n_i, device=self.device) / self.n_i,
             requires_grad=True,
-        )
+        )   # point-wise convolution weights
         self.alpha = nn.Parameter(  
             torch.empty(self.n_i, 1, 1, device=self.device),
             requires_grad=True,
-        )
+        )   # $g_I$ in paper
         self.gain = nn.Parameter(
             torch.ones(self.n_e, 1, 1, device=self.device),
             requires_grad=True,
-        )
+        )   # $g_E$ in paper
         self.bias = nn.Parameter(
             torch.zeros(self.n_e, 1, 1, device=self.device),
             requires_grad=True,
-        )
+        )   # $b_E$ in paper
 
         self.weight_ei.register_hook(lambda grad: grad / self.prev_in_features)
 
@@ -194,7 +194,7 @@ class SpikingEiNorm2d(nn.Module):
         I_shunting = torch.matmul(
             self.weight_ei,
             (self.alpha * I_ie).permute(2, 3, 1, 0),
-        ).permute(3, 2, 0, 1)
+        ).permute(3, 2, 0, 1) # equivalent to point-wise convolution
         I_shunting_adjusted = self._replace_zero_with_second_min(I_shunting)
 
         I_int = self.gain * I_balanced / I_shunting_adjusted + self.bias

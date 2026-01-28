@@ -100,7 +100,7 @@ class SpikingEiNorm1d(nn.Module):
             torch.zeros(1, self.n_e, device=self.device), 
             requires_grad=True)  # $b_E$ in paper
 
-        self.weight_ei.register_hook(lambda grad: grad / self.prev_in_features) # point-wise convolution weights
+        self.weight_ei.register_hook(lambda grad: grad / self.prev_in_features)
 
         self.visualize_cache = {}
         self._need_visualize = False
