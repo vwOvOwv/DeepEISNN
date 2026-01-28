@@ -59,18 +59,6 @@ class Visualizer:
 
     def _plot_hist(self, layer_name: str, layer_idx: int, x: torch.Tensor, 
                    name: str, epoch: int, iteration: int):
-        """
-        Plot histogram of the tensor x and save it to the cache. Images plotted 
-        will be used to generate video at last.
-
-        Args:
-            layer_name (str): The name of the layer from which the tensor x is obtained.
-            layer_idx (int): The index of the layer in the model.
-            x (torch.Tensor): The tensor to be visualized.
-            name (str): The name of the tensor for identification.
-            epoch (int): The current epoch number.
-            iteration (int): The current iteration number.
-        """
         with torch.no_grad():
             x_flat = x.reshape(-1)
             min_val, max_val = x_flat.min().item(), x_flat.max().item()

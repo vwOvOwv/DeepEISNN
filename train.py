@@ -6,7 +6,7 @@ from torchinfo import summary
 import numpy as np
 import tqdm
 import argparse
-from datasets import load_dvs, load_normal
+from datasets import dvs, normal
 import os
 import random
 import argparse
@@ -16,7 +16,7 @@ import shutil
 import wandb
 
 from models.factory import build_model
-from modules.optimizers import EI_SGD
+from modules.optimizers import EiSGD
 from utils.visualization import Visualizer
 from utils.evaluation import AverageMeter, evaluate
 from spikingjelly.activation_based.functional import reset_net
@@ -104,25 +104,24 @@ def build_optimizer_and_scheduler(model: nn.Module, config: dict,
                 else:
                     non_negative_params.append(param)
 
-            optimizer_non_negative = EI_SGD(non_negative_params,
+            optimizer_non_negative = EiSGD(non_negative_params,
                                             config['learning_rate'],
                                             momentum=config['momentum'], 
-                                            weight_decay=config['weight_decay'],
-                                            decay_mode=config.get('decay_mode', 'L2'), 
+                                            weight_decay=config['weight_decay'], 
                                             clamped=True)
-            optimizer_standard = EI_SGD(standard_params, 
+            optimizer_standard = EiSGD(standard_params, 
                                         config['learning_rate'],
                                         momentum=config['momentum'],
                                         weight_decay=config['weight_decay'],
-                                        decay_mode=config.get('decay_mode', 'L2'))
+                                        clamped=False)
             optimizer_list.append(optimizer_non_negative)
             optimizer_list.append(optimizer_standard)
         else:   # BN-SNN, no need to split params
-            optimizer = EI_SGD(model.named_parameters(), 
+            optimizer = EiSGD(model.parameters(), 
                             config['learning_rate'],
                             momentum=config['momentum'], 
                             weight_decay=config['weight_decay'],
-                            decay_mode=config.get('decay_mode', 'L2'))
+                            clamped=False)
             optimizer_list.append(optimizer)
     else:
         raise NotImplementedError(f"Optimizer {config['optimizer']} is not implemented.")
@@ -168,10 +167,11 @@ def train_one_epoch(model, epoch, config, train_loader, optimizer_list,
         inputs, labels = inputs.to(device), labels.to(device)
         outputs = model(inputs)
         batch_loss = criterion(outputs, labels)
-        batch_loss.backward()
         
         for optimizer in optimizer_list:
             optimizer.zero_grad()
+
+        batch_loss.backward()
 
         if visualizer is not None and model.get_visualize():
             visualizer.visualize_model_states(model, epoch + 1, global_steps + 1)
@@ -208,7 +208,7 @@ def validate(val_loader, model, criterion, device):
         loss = AverageMeter()
         top1 = AverageMeter()
         top5 = AverageMeter()
-        for inputs, labels in tqdm.tqdm(val_loader, desc="Validating"):
+        for inputs, labels in tqdm.tqdm(val_loader, desc="Validation"):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             reset_net(model)
@@ -243,12 +243,12 @@ if __name__ == '__main__':
     visualizer = Visualizer(output_dir) if args.log > 1 else None
 
     # build data loader
-    dataset_func = {'MNIST': load_normal.get_mnist,
-                    'CIFAR10': load_normal.get_cifar10,
-                    'CIFAR100': load_normal.get_cifar100,
-                    'CIFAR10DVS': load_dvs.get_cifar10dvs,
-                    'DVSGesture': load_dvs.get_dvs128gesture,
-                    'TinyImageNet200': load_normal.get_tinyimagenet}
+    dataset_func = {'MNIST': normal.get_mnist,
+                    'CIFAR10': normal.get_cifar10,
+                    'CIFAR100': normal.get_cifar100,
+                    'CIFAR10DVS': dvs.get_cifar10dvs,
+                    'DVSGesture': dvs.get_dvs128gesture,
+                    'TinyImageNet200': normal.get_tinyimagenet}
     if 'DVS' in config['dataset']:
         train_set, val_set = dataset_func[config['dataset']](config['data_path'], 
                                                              config['T'])
@@ -272,10 +272,6 @@ if __name__ == '__main__':
 
     # build model
     model = build_model(config, device, global_rng)
-    if model is None:
-        raise NotImplementedError(f"Model {config['type']}:{config['arch']}\
-                                  {config['num_layers']} is not implemented.")
-    
     model.to(device)
     
     # summarize model
@@ -296,8 +292,7 @@ if __name__ == '__main__':
     if criterion == 'CE':
         criterion = torch.nn.CrossEntropyLoss().to(device)
     else:
-        raise NotImplementedError(criterion)
-
+        raise NotImplementedError(f"Loss {criterion} is not implemented.")
     # resume from checkpoint
     start_epoch = 0
     best_val_acc1 = 0.
@@ -316,7 +311,7 @@ if __name__ == '__main__':
         print(f"===> loaded checkpoint (epoch {checkpoint['next_epoch']})")
 
     # train
-    print(f"Start training from epoch {start_epoch}")
+    print(f"\nStart training from epoch {start_epoch}")
     for epoch in range(start_epoch, config['epochs']):
         loss, acc1, acc5 = train_one_epoch(
             model, epoch, config, train_loader, optimizer_list, scheduler_list, 
@@ -325,6 +320,10 @@ if __name__ == '__main__':
 
         # evaluate the model
         val_loss, val_acc1, val_acc5 = validate(val_loader, model, criterion, device)
+        is_best = False
+        if val_acc1 > best_val_acc1:
+            best_val_acc1 = val_acc1
+            is_best = True
 
         # logging
         if args.log > 0 and logger is not None:
@@ -352,8 +351,7 @@ if __name__ == '__main__':
                 'best_val_acc': best_val_acc1,
                 'config': config
             }, latest_path)
-            
-            if val_acc1 > best_val_acc1:
+            if is_best:
                 shutil.copyfile(latest_path, os.path.join(output_dir, 'ckpt-best.pth'))
 
         # update best val acc

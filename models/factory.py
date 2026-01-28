@@ -44,8 +44,6 @@ def build_model(config: dict, device: torch.device, global_rng: np.random.Genera
     seq_input = 'DVS' in dataset
 
     if model_type == 'BN-SNN':
-        if neuron_config is None:
-            raise ValueError("Neuron is not specified.")
         if arch == 'MLP':
             if seq_input:
                 raise ValueError("MLP does not support sequential input currently.")
@@ -53,123 +51,32 @@ def build_model(config: dict, device: torch.device, global_rng: np.random.Genera
         elif arch == 'VGG':
             dropout = config['dropout']
             light_classifier = config['light_classifier']
-            return SpikingVGG(T, num_layers, in_channels, num_classes, neuron_config, 
-                              light_classifier, dropout, BN=True, seq_input)
+            return SpikingVGG(T, num_layers, in_channels, num_classes, neuron_config,
+                              light_classifier, dropout, seq_input, BN=True)
         elif arch == 'ResNet':
-            pass
+            zero_init_residual = config['zero_init_residual']
+            # ResNet has BN by default
+            return SpikingResNet(T, num_layers, in_channels, num_classes,
+                                 neuron_config, zero_init_residual, seq_input)
         else:
-            return None
+            raise NotImplementedError(f"Model {model_type}:{arch}\
+                                      {num_layers} is not implemented.")
     elif model_type == 'EI-SNN':
-        if neuron_config is None:
-            raise ValueError("Neuron is not specified.")
-        if ei_ratio is None:
-            raise ValueError("`ei_ratio` is not specified.")
+        ei_ratio = config['ei_ratio']
         if arch == 'MLP':
             return SpikingEiMLP(T, num_layers, n_inputs, num_classes, 
                                 neuron_config, ei_ratio, device, global_rng)
         elif arch == 'VGG':
-            # return SpikingVGG(num_layers, num_classes, in_channels, T, 
-            #             neuron_config, dropout, conv_config, BN, light_classifier, 
-            #             has_temporal_dim)
-            pass
+            dropout = config['dropout']
+            light_classifier = config['light_classifier']
+            return SpikingEiVGG(T, num_layers, in_channels, num_classes, 
+                                neuron_config, light_classifier, dropout, seq_input,
+                                ei_ratio, device, global_rng)
         elif arch == 'ResNet':
-            pass
+            zero_init_residual = config['zero_init_residual']
+            return SpikingEiResNet(T, num_layers, in_channels, num_classes,
+                                   neuron_config, seq_input, ei_ratio, device,
+                                   global_rng)
         else:
-            return None
-
-def build_mlp(config: dict, device: torch.device, rng: np.random.Generator):
-    model_type = config['type']
-    T = config['T']
-    num_layers = config['num_layers']
-    dataset = config['dataset']
-    n_inputs = n_inputs_dict[dataset]
-    num_classes = num_classes_dict[dataset]
-
-    ei_ratio = config.get('ei_ratio', None)
-    neuron_config = config.get('neuron', None)
-    
-    if model_type == 'BN-SNN':
-        if neuron_config is None:
-            raise ValueError("Neuron is not specified.")
-        if ei_ratio is not None:
-            raise ValueError("`ei_ratio` should not be specified for BN-SNN.")
-        return SpikingMLP(T, num_layers, n_inputs, num_classes, neuron_config, 
-                          BN=True)
-    
-    elif model_type == 'EI-SNN':
-        if neuron_config is None:
-            raise ValueError("Neuron is not specified.")
-        if ei_ratio is None:
-            raise ValueError("`ei_ratio` is not specified.")
-        return SpikingEiMLP(T, num_layers, n_inputs, num_classes, neuron_config, 
-                            ei_ratio, device, rng)
-    else:
-        return None
-
-
-def build_vgg(config: dict, device: torch.device, rng: np.random.Generator):
-    model_type = config['model_type']
-    num_layers = config['num_layers']
-    dataset = config['dataset']
-    light_classifier = config['light_classifier']
-    dropout = config.get('dropout', 0.0)
-
-    in_channels = in_channels_dict[dataset]
-    num_classes = num_classes_dict[dataset]
-    has_temporal_dim = True if 'DVS' in dataset else False
-    conv_config = {
-        'kernel_size': 3, 'stride': 1, 'padding': 1, 'dilation': 1,
-        'groups': 1, 'padding_mode': 'zeros', 'bias': False
-    }
-
-    ei_ratio = config.get('ei_ratio', None)
-    T = config.get('T', None)
-    neuron_config = config.get('neuron_config', None)
-
-    if model_type == 'SNN':
-        if T is None or neuron_config is None:
-            raise ValueError("`T` and `neuron_config` must be specified for SNN " \
-            "models.")
-        return SpikingVGG(num_layers, num_classes, in_channels, T, 
-                        neuron_config, dropout, conv_config, BN, light_classifier, 
-                        has_temporal_dim)
-    
-    elif model_type == 'EISNN':
-        if T is None or neuron_config is None or ei_ratio is None:
-            raise ValueError("`T`, `neuron_config`, and `ei_ratio` must be " \
-            "specified for EISNN models.")
-        return SpikingEiVGG(num_layers, num_classes, in_channels, ei_ratio, T, 
-                            neuron_config, dropout, conv_config, light_classifier, has_temporal_dim,
-                            device, rng)
-    else:
-        return None
-
-
-def build_resnet(parameters: dict, device: torch.device, rng: np.random.Generator):
-    model_type = parameters['model_type']
-    num_layers = parameters['num_layers']
-    dataset = parameters['dataset']
-
-    in_channels = in_channels_dict[dataset]
-    num_classes = num_classes_dict[dataset]
-    has_temporal_dim = True if 'DVS' in dataset else False
-
-    ei_ratio = parameters.get('ei_ratio', None)
-    T = parameters.get('T', None)
-    neuron_config = parameters.get('neuron_config', None)
-    zero_init_residual = parameters.get('zero_init_residual', False)
-
-    if model_type == 'SNN':
-        if T is None or neuron_config is None:
-            raise ValueError("`T` and `neuron_config` must be specified for SNN " \
-            "models.")
-        return SpikingResNet(num_layers, neuron_config, T, in_channels, 
-                                     num_classes, zero_init_residual, has_temporal_dim)
-    elif model_type == 'EISNN':
-        if T is None or neuron_config is None or ei_ratio is None:
-            raise ValueError("`T`, `neuron_config`, and `ei_ratio` must be " \
-            "specified for DSNN models.")
-        return SpikingEiResNet(ei_ratio, num_layers, neuron_config, T, in_channels, 
-                               num_classes, has_temporal_dim, rng, device)
-    else:
-        return None
+            raise NotImplementedError(f"Model {model_type}:{arch}\
+                                      {num_layers} is not implemented.")

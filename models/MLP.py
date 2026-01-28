@@ -11,7 +11,7 @@ __all__ = [
     'SpikingMLP', 'SpikingEiMLP'
 ]
 
-cfg = {
+layer_config = {
     2: [500],
     4: [500, 500, 300],
     6: [500, 500, 300, 300, 300],
@@ -31,7 +31,7 @@ class SpikingMLP(nn.Module):
         self.n_outputs = n_outputs
         self.neuron_config = neuron_config
         self.BN = BN
-        self.layers = self._build_model(cfg[self.num_layers])
+        self.layers = self._build_model(layer_config[self.num_layers])
 
         self._need_visualize = False
 
@@ -76,18 +76,20 @@ class SpikingMLP(nn.Module):
 class SpikingEiMLP(nn.Module):
     def __init__(self, T: int, num_layers: int, n_inputs: int, n_outputs: int,
                  neuron_config: dict[str, Any], ei_ratio: int, 
-                 device: torch.device, rng: np.random.Generator) -> None:
+                 device: torch.device, rng: np.random.Generator):
         super().__init__()
-        self.num_layers = num_layers
-        self.num_classes = n_outputs
-        self.n_inputs = n_inputs
-        self.ei_ratio = ei_ratio
         self.T = T
+        self.num_layers = num_layers
+        self.n_inputs = n_inputs
+        self.n_outputs = n_outputs
         self.neuron_config = neuron_config
+        self.ei_ratio = ei_ratio
+
+        # used for dynamic initialization
         self.device = device
         self.rng = rng
-        self.layers = self._build_model(cfg[self.num_layers])
-
+        
+        self.layers = self._build_model(layer_config[self.num_layers])
         self._need_visualize = False
 
     def _build_model(self, cfg: list[int]) -> nn.Sequential:
@@ -96,18 +98,14 @@ class SpikingEiMLP(nn.Module):
         layers.append(AddTemporalDim(self.T))
         layers.append(MergeTemporalDim(self.T))
         for out_features in cfg:
-            layers.append(SpikingEiLinear(self.ei_ratio, in_features, 
-                                          out_features, self.device, self.rng))
-            layers.append(SpikingEiNorm1d(self.ei_ratio, out_features, 
-                                          in_features, self.device))
+            layers.append(SpikingEiLinear(in_features, out_features, self.ei_ratio, self.device, self.rng))
+            layers.append(SpikingEiNorm1d(out_features, in_features, self.ei_ratio, self.device))
             layers.append(SplitTemporalDim(self.T))
             layers.append(LIF(**self.neuron_config))
             layers.append(MergeTemporalDim(self.T))
             in_features = out_features
-        layers.append(SpikingEiLinear(self.ei_ratio, cfg[-1], 
-                                      self.num_classes, self.device, self.rng))
-        layers.append(SpikingEiNorm1d(self.ei_ratio, self.num_classes, 
-                                      cfg[-1], self.device, True))
+        layers.append(SpikingEiLinear(cfg[-1], self.n_outputs, self.ei_ratio, self.device, self.rng))
+        layers.append(SpikingEiNorm1d(self.n_outputs, cfg[-1], self.ei_ratio, self.device, output_layer=True))
         layers.append(SplitTemporalDim(self.T))
         return nn.Sequential(*layers)
 

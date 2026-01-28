@@ -2,7 +2,7 @@ import torch
 from torch.optim.optimizer import Optimizer
 
 
-class EI_SGD(Optimizer):
+class EiSGD(Optimizer):
     def __init__(self, params, lr=1e-2, momentum=0, dampening=0,
                  weight_decay=0, decay_mode='L2', nesterov=False, clamped=False):
         if not 0.0 <= lr:
@@ -19,10 +19,10 @@ class EI_SGD(Optimizer):
                         nesterov=nesterov,
                         clamped=clamped)
         
-        super(EI_SGD, self).__init__(params, defaults)
+        super(EiSGD, self).__init__(params, defaults)
 
     def __setstate__(self, state):
-        super(EI_SGD, self).__setstate__(state)
+        super(EiSGD, self).__setstate__(state)
         for group in self.param_groups:
             group.setdefault('nesterov', False)
 

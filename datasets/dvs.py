@@ -1,7 +1,6 @@
 import os
 import torch
 import torchvision.transforms as transforms
-import PIL.Image
 from spikingjelly.datasets.dvs128_gesture import DVS128Gesture
 from spikingjelly.datasets.cifar10_dvs import CIFAR10DVS
 from spikingjelly.datasets import split_to_train_test_set, RandomTemporalDelete

@@ -9,20 +9,8 @@ __all__ = [
 
 
 class SpikingBatchNorm2d(nn.Module):
-    """
-    2D batch normalization layer for SNN models.
-    """
     def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1,
-                 affine: bool = True, track_running_stats: bool = True) -> None:
-        """
-        Initialize `SpikingStandardBatchNorm2d`.
-        Args:
-            num_features (int): Number of features in the input.
-            eps (float): A value added to the denominator for numerical stability.
-            momentum (float): Momentum for the running mean and variance.
-            affine (bool): If True, this module has learnable affine parameters.
-            track_running_stats (bool): If True, this module tracks the running mean and variance.
-        """
+                 affine: bool = True, track_running_stats: bool = True):
         super().__init__()
         self.bn = nn.BatchNorm2d(num_features, eps, momentum, affine, track_running_stats)
         
@@ -31,12 +19,6 @@ class SpikingBatchNorm2d(nn.Module):
         self._inited = True
 
     def _set_visualize_cache(self, *args) -> None:
-        """
-        Set visualization cache of `SpikingStandardBatchNorm2d`.
-        Args:
-            input (torch.Tensor): Input tensor.
-            output (torch.Tensor): Output tensor.
-        """
         with torch.no_grad():
             input, output = args
             self.visualize_cache['param1: gamma'] = self.bn.weight.detach()
@@ -45,13 +27,6 @@ class SpikingBatchNorm2d(nn.Module):
             self.visualize_cache['data2: output'] = output.detach()
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of `SpikingStandardBatchNorm2d`.
-        Args:
-            input (torch.Tensor): Input tensor. Shape `(T * batch_size, in_channels, H, W)`.
-        Returns:
-            torch.Tensor: Output tensor. Shape `(T * batch_size, out_channels, H, W)`.
-        """
         output = self.bn.forward(input)
         with torch.no_grad():
             if self._need_visualize:
@@ -63,18 +38,8 @@ class SpikingBatchNorm2d(nn.Module):
     
 
 class SpikingEiNorm2d(nn.Module):
-    """
-    2D batch normalization layer for DSNN models.
-    """
-    def __init__(self, ei_ratio: int, num_features: int, prev_in_features: int, device: torch.device = torch.device('cpu')) -> None:
-        """
-        Initialize `SpikingEiNorm2d`.
-        Args:
-            T (int): Number of time steps.
-            ei_ratio (int): Ratio of excitatory to inhibitory neurons.
-            num_features (int): Number of features in the input. Note that this is the number of output channels (i.e., `n_e`) of previous conv layer.
-            prev_in_features (int): Number of features input to the previous conv layer. Note that this is NOT the number of input channels of previous conv layer.
-        """
+    def __init__(self, num_features: int, prev_in_features: int, 
+                 ei_ratio: int, device: torch.device):
         super().__init__()
         self.n_e = num_features
         self.n_i = self.n_e // ei_ratio
@@ -87,7 +52,6 @@ class SpikingEiNorm2d(nn.Module):
         self.bias = nn.Parameter(torch.zeros(self.n_e, 1, 1, device=self.device), requires_grad=True)
 
         self.weight_ei.register_hook(lambda grad: grad / self.prev_in_features)
-        # self.weight_ei.register_hook(lambda grad: grad / np.sqrt(self.prev_in_features))
 
         self.visualize_cache = {}
         self._need_visualize = False
@@ -101,14 +65,6 @@ class SpikingEiNorm2d(nn.Module):
         self.alpha.data = torch.ones(self.n_i, 1, 1, device=self.device) / np.sqrt(self.prev_in_features) * np.sqrt(E_x_square + Var_x) / E_x
 
     def _set_visualize_cache(self, *args: Any) -> None:
-        """
-        Set visualization cache of `SpikingEiNorm2d`.
-        Args:
-            I_ei (torch.Tensor): Input inhibitory current.
-            I_balanced (torch.Tensor): Balanced input current.
-            I_shunting (torch.Tensor): Shunting inhibitory current.
-            I_int (torch.Tensor): Integrated current.
-        """
         I_ei, I_balanced, I_shunting, I_int = args
         self.visualize_cache['param1:weight_ei'] = self.weight_ei.detach()
         self.visualize_cache['param2:alpha'] = self.alpha.detach()
@@ -119,22 +75,7 @@ class SpikingEiNorm2d(nn.Module):
         self.visualize_cache['data3:I_shunting'] = I_shunting.detach()
         self.visualize_cache['data4:I_int'] = I_int.detach()
 
-        # T = self.T
-        # for t in range(T):
-        #     self.visualize_cache[f'data1: I_ei_t={t}'] = I_ei[t].detach()
-        #     self.visualize_cache[f'data2: I_balanced_t={t}'] = I_balanced[t].detach()
-        #     self.visualize_cache[f'data3: I_shunting_t={t}'] = I_shunting[t].detach()
-        #     self.visualize_cache[f'data4: I_int_t={t}'] = I_int[t].detach()
-
-    def replace_zero_with_second_min(self, input: torch.Tensor):
-        """
-        Replace zero values in the tensor with the second minimum value.
-        This method is used to avoid division by zero or log(0) issues.
-        Args:
-            input (torch.Tensor): Input tensor.
-        Returns:
-            torch.Tensor: Tensor with zero values replaced by the second minimum value.
-        """
+    def _replace_zero_with_second_min(self, input: torch.Tensor):
         has_zero = (input == 0.).any()
     
         if has_zero:
@@ -154,24 +95,12 @@ class SpikingEiNorm2d(nn.Module):
             return input
 
     def _clamp_parameters(self) -> None:
-        """
-        Clamp the parameters of `SpikingEiNorm1d` to ensure they are non-negative.
-        """
         with torch.no_grad():
             self.weight_ei.data.clamp_(min=0)
             self.alpha.data.clamp_(min=0)
             self.gain.data.clamp_(min=0)
 
-    def forward(self, input: tuple[torch.Tensor, torch.Tensor, Union[dict, None]]) -> torch.Tensor:
-        """
-        Forward pass of `SpikingEiNorm2d`.
-        Args:
-            input (tuple[torch.Tensor, torch.Tensor]): A tuple containing
-                -  I_ee (torch.Tensor): Input excitatory current. Shape `(T * batch_size, n_e, H, W)`.
-                -  I_ie (torch.Tensor): Input inhibitory current. Shape `(T * batch_size, n_i, H, W)`.
-        Returns:
-            torch.Tensor: Output tensor. Shape `(T * batch_size, n_e, H, W)`.
-        """
+    def forward(self, input: tuple[torch.Tensor, torch.Tensor, Union[dict, None]]):
         self._clamp_parameters()
         I_ee, I_ie, batch_stats = input
         if not self._inited and batch_stats is not None:
@@ -183,7 +112,7 @@ class SpikingEiNorm2d(nn.Module):
         I_balanced = I_ee - I_ei
 
         I_shunting = torch.matmul(self.weight_ei, (self.alpha * I_ie).permute(2, 3, 1, 0)).permute(3, 2, 0, 1)
-        I_shunting_adjusted = self.replace_zero_with_second_min(I_shunting)
+        I_shunting_adjusted = self._replace_zero_with_second_min(I_shunting)
 
         I_int = self.gain * I_balanced / I_shunting_adjusted + self.bias
         if self._need_visualize:

@@ -1,7 +1,6 @@
 # data
 dataset: CIFAR10
 data_path: /home/data4T1/lpy/datasets/cifar10
-num_workers: 8
 
 # model
 type: BN-SNN
@@ -11,9 +10,8 @@ T: 4
 light_classifier: True
 
 dropout: 0.
-neuron:
+neuron: # configuration of spiking LIF neurons
   tau: 2.0
-  v_threshold: 1.0
 
 # training
 epochs: 300
@@ -21,7 +19,7 @@ batch_size: 128
 learning_rate: 0.1
 optimizer: SGD
 momentum: 0.9
-weight_decay: 1e-4
+weight_decay: 0.0001
 scheduler: CosALR
 loss: CE
 

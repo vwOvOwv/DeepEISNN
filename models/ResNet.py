@@ -15,7 +15,7 @@ __all__ = [
     'SpikingResNet', 'SpikingEiResNet'
 ]
 
-standard_cfg = {
+standard_layer_config = {
     18: {'block': SpikingStandardBasicBlock, 'layers': [2, 2, 2, 2]},
     34: {'block': SpikingStandardBasicBlock, 'layers': [3, 4, 6, 3]},
     50: {'block': SpikingStandardBottleneck, 'layers': [3, 4, 6, 3]},
@@ -23,7 +23,7 @@ standard_cfg = {
     152: {'block': SpikingStandardBottleneck, 'layers': [3, 8, 16, 3]}
 }
 
-ei_cfg = {
+ei_layer_config = {
     18: {'block': SpikingEiBasicBlock, 'layers': [2, 2, 2, 2]},
     34: {'block': SpikingEiBasicBlock, 'layers': [3, 4, 6, 3]},
     50: {'block': SpikingEiBottleneck, 'layers': [3, 4, 6, 3]},
@@ -33,12 +33,12 @@ ei_cfg = {
 
 
 class SpikingResNet(nn.Module):
-    def __init__(self, num_layers, neuron_config: dict, T, in_channels, num_classes, 
-                 zero_init_residual=False, has_temporal_dim=False):
+    def __init__(self, T: int, num_layers: int, in_channels: int, n_outputs: int, 
+                 neuron_config: dict, zero_init_residual=False, seq_input=False):
         super(SpikingResNet, self).__init__()
         self.in_channels = 64
 
-        if not has_temporal_dim:
+        if not seq_input:
             self.init_expand = AddTemporalDim(T)
         else:
             self.init_expand = nn.Identity()
@@ -51,9 +51,9 @@ class SpikingResNet(nn.Module):
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.maxpool = nn.Identity()
         
-        cfg = standard_cfg[num_layers]
-        block = cfg['block']
-        layers = cfg['layers']
+        layer_config = standard_layer_config[num_layers]
+        block = layer_config['block']
+        layers = layer_config['layers']
 
         self.layer1 = self._make_layers(block, neuron_config, T,  64, layers[0], stride=1)
         self.layer2 = self._make_layers(block, neuron_config, T, 128, layers[1], stride=2)
@@ -61,7 +61,7 @@ class SpikingResNet(nn.Module):
         self.layer4 = self._make_layers(block, neuron_config, T, 512, layers[3], stride=2)
 
         self.adaptive_avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = SpikingLinear(512 * block.expansion, num_classes)
+        self.fc = SpikingLinear(512 * block.expansion, n_outputs)
         self.final_split = SplitTemporalDim(T)
 
         for m in self.modules():
@@ -90,12 +90,12 @@ class SpikingResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.in_channels, out_channels, neuron_config, T, stride, downsample))
+        layers.append(block(T, self.in_channels, out_channels, neuron_config, stride, downsample))
         
         self.in_channels = out_channels * block.expansion
         
         for _ in range(1, num_blocks):
-            layers.append(block(self.in_channels, out_channels, neuron_config, T))
+            layers.append(block(T, self.in_channels, out_channels, neuron_config))
 
         return nn.Sequential(*layers)
 
@@ -121,34 +121,34 @@ class SpikingResNet(nn.Module):
 
         return x.mean(dim=0)
 
-
 class SpikingEiResNet(nn.Module):
-    def __init__(self, ei_ratio, num_layers, neuron_config: dict, T, in_channels, 
-                 num_classes, has_temporal_dim, rng, device=torch.device('cpu')):
+    def __init__(self, T: int, num_layers: int, in_channels: int, n_outputs: int, 
+                 neuron_config: dict, seq_input: bool, ei_ratio: int, 
+                 device: torch.device, rng: np.random.Generator):
         super(SpikingEiResNet, self).__init__()
         self.in_channels = 64
-        if not has_temporal_dim:
+
+        if not seq_input:
             self.init_expand = AddTemporalDim(T)
         else:
             self.init_expand = nn.Identity()
         self.init_merge = MergeTemporalDim(T)
-        self.conv1 = SpikingEiConv2d(ei_ratio, in_channels, self.in_channels, rng, 
-                                     kernel_size=3, stride=1, padding=1, bias=False, 
-                                     device=device)
-        # self.conv1 = SpikingEiConv2d(ei_ratio, in_channels, self.in_channels, rng, 
-        #                              kernel_size=7, stride=2, padding=3, bias=False, 
-        #                              device=device)
-        self.norm1 = SpikingEiNorm2d(ei_ratio, self.in_channels, 
-                                   in_channels * 3 * 3, device=device)
+        self.conv1 = SpikingEiConv2d(in_channels, self.in_channels, ei_ratio, 
+                                     device, rng, kernel_size=3, stride=1, 
+                                     padding=1, bias=False)
+        # self.conv1 = SpikingEiConv2d(in_channels, self.in_channels, ei_ratio, 
+        #                              device, rng, kernel_size=7, stride=2, 
+        #                              padding=3, bias=False)
+        self.norm1 = SpikingEiNorm2d(self.in_channels, in_channels * 3 * 3, ei_ratio, device=device)
         self.split1 = SplitTemporalDim(T)
         self.lif1 = LIF(**neuron_config)
         self.merge1 = MergeTemporalDim(T)
         # self.maxpool = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         self.maxpool = nn.Identity()
         
-        cfg = ei_cfg[num_layers]
-        block = cfg['block']
-        layers = cfg['layers']
+        layer_config = ei_layer_config[num_layers]
+        block = layer_config['block']
+        layers = layer_config['layers']
 
         self.layer1 = self._make_layers(block, ei_ratio, neuron_config, T,  64, layers[0], rng, device, stride=1)
         self.layer2 = self._make_layers(block, ei_ratio, neuron_config, T, 128, layers[1], rng, device, stride=2)
@@ -156,28 +156,28 @@ class SpikingEiResNet(nn.Module):
         self.layer4 = self._make_layers(block, ei_ratio, neuron_config, T, 512, layers[3], rng, device, stride=2)
 
         self.adaptive_avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = SpikingEiLinear(ei_ratio, 512 * block.expansion, num_classes, device, rng)
-        self.final_ei_norm = SpikingEiNorm1d(ei_ratio, num_classes, 512 * block.expansion, device=device, output_layer=True)
+        self.fc = SpikingEiLinear(512 * block.expansion, n_outputs, ei_ratio, device, rng)
+        self.final_ei_norm = SpikingEiNorm1d(n_outputs, 512 * block.expansion, ei_ratio, device, output_layer=True)
         self.final_split = SplitTemporalDim(T)
 
     def _make_layers(self, block, ei_ratio, neuron_config, T, out_channels, num_blocks, rng, device, stride=1):
         downsample = None
         if stride != 1 or self.in_channels != out_channels * block.expansion:
             downsample = nn.Sequential(
-                SpikingEiConv2d(ei_ratio, self.in_channels, out_channels * block.expansion, rng, kernel_size=1, stride=stride, bias=False, device=device),
-                SpikingEiNorm2d(ei_ratio, out_channels * block.expansion, self.in_channels * 1 * 1, device=device),
+                SpikingEiConv2d(self.in_channels, out_channels * block.expansion, ei_ratio, device, rng, kernel_size=1, stride=stride, bias=False),
+                SpikingEiNorm2d(out_channels * block.expansion, self.in_channels * 1 * 1, ei_ratio, device=device),
                 SplitTemporalDim(T),
                 LIF(**neuron_config),
                 MergeTemporalDim(T)
             )
 
         layers = []
-        layers.append(block(self.in_channels, out_channels, ei_ratio, neuron_config, T, device, rng, stride, downsample))
+        layers.append(block(T, self.in_channels, out_channels, neuron_config, ei_ratio, device, rng, stride, downsample))
         
         self.in_channels = out_channels * block.expansion
         
         for _ in range(1, num_blocks):
-            layers.append(block(self.in_channels, out_channels, ei_ratio, neuron_config, T, device, rng))
+            layers.append(block(T, self.in_channels, out_channels, neuron_config, ei_ratio, device, rng))
 
         return nn.Sequential(*layers)
 
