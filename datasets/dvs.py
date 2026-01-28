@@ -1,5 +1,5 @@
 """
-datasets.dvs - load and preprocess DVS datasets 
+datasets.dvs - load and preprocess DVS datasets
 """
 
 import os
@@ -15,13 +15,16 @@ from utils.dvs_datasets import PackagingClass, function_nda
 
 
 def get_dvs128gesture(data_path: str, T: int):
-    """
-    Load DVS128Gesture. Inputs are resized to 48x48.
-    
-    :param data_path: Path to the dataset
-    :type data_path: str
-    :param T: Total time steps
-    :type T: int
+    """Load DVS128Gesture dataset.
+
+    Inputs are resized to 48x48.
+
+    Args:
+        data_path: Path to the dataset.
+        T: Total time steps.
+
+    Returns:
+        Tuple of (train_set, val_set).
     """
     print("Loading DVS128Gesture")
     if not os.path.exists(data_path):
@@ -49,19 +52,22 @@ def get_dvs128gesture(data_path: str, T: int):
 
 
 def get_cifar10dvs(data_path: str, T: int):
-    """
-    Load CIFAR10-DVS. Inputs are resized to 48x48.
-    
-    :param data_path: Path to the dataset
-    :type data_path: str
-    :param T: Total time steps
-    :type T: int
+    """Load CIFAR10-DVS dataset.
+
+    Inputs are resized to 48x48.
+
+    Args:
+        data_path: Path to the dataset.
+        T: Total time steps.
+
+    Returns:
+        Tuple of (train_set, val_set).
     """
     print("Loading CIFAR10-DVS")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
 
-    def transform_train(data):
+    def transform_train(data: torch.Tensor) -> torch.Tensor:
         data = transforms.RandomResizedCrop(128, scale=(0.7, 1.0),
                                         interpolation=transforms.InterpolationMode.NEAREST)(data)
         resize = transforms.Resize(size=(48, 48))
@@ -72,7 +78,7 @@ def get_cifar10dvs(data_path: str, T: int):
         data = function_nda(data)
         return data.float()
 
-    def transform_val(data):
+    def transform_val(data: torch.Tensor) -> torch.Tensor:
         resize = transforms.Resize(size=(48, 48))
         data = resize(data).float()
         return data.float()

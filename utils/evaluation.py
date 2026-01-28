@@ -1,27 +1,58 @@
+"""Evaluation utilities for classification metrics."""
+
+from typing import Sequence
+
 import torch
 
-class AverageMeter(object):
-    """Computes and stores the average and current value.   
-       Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262
+class AverageMeter:
+    """Track and update running averages of scalar values.
+
+    Note:
+        Adapted from the PyTorch ImageNet example.
     """
 
     def __init__(self):
+        """Initialize and reset meters."""
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
         self.reset()
 
     def reset(self):
+        """Reset all statistics to zero."""
         self.val = 0
         self.avg = 0
         self.sum = 0
         self.count = 0
 
-    def update(self, val, n=1):
+    def update(self, val: float, n: int = 1) -> None:
+        """Update the meter with a new value.
+
+        Args:
+            val: Value to add.
+            n: Number of samples represented by the value.
+        """
         self.val = val
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
 
-def evaluate(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
+def evaluate(
+    output: torch.Tensor,
+    target: torch.Tensor,
+    topk: Sequence[int] = (1,),
+):
+    """Compute top-k accuracy for specified values of k.
+
+    Args:
+        output: Model outputs with shape (B, C).
+        target: Ground-truth labels with shape (B,).
+        topk: Iterable of k values.
+
+    Returns:
+        List of accuracies for each k in `topk`.
+    """
     with torch.no_grad():
         maxk = max(topk)
         batch_size = target.size(0)

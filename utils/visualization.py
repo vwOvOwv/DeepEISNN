@@ -1,27 +1,35 @@
-import os
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('agg')  # use a non-interactive backend for matplotlib
-from matplotlib.lines import Line2D
-import imageio
-import torch
+"""Visualization utilities for spiking model internals."""
+
+
 import io
-import threading
+import os
 import shutil
+import threading
 from queue import Queue
-import numpy as np
-from typing import Any, Iterator
+
+import imageio
+import matplotlib
+
+matplotlib.use('agg')  # use a non-interactive backend for matplotlib
+
+import matplotlib.pyplot as plt
+import torch
 
 class Visualizer:
-    """
-    Usage:
-    >>> model.set_visualize(True)  # Enable visualization
-    >>> output = model(input)  # During forward pass, layers will put data in cache to visualize
-    >>> ...
-    >>> visualizer.visualize_model_states(model, epoch, global_steps + 1)
-    >>> model.set_visualize(False)  # Disable visualization
+    """Save layer-wise histograms of cached tensors for visualization.
+
+    Example:
+        model.set_visualize(True)
+        output = model(input)
+        visualizer.visualize_model_states(model, epoch, global_steps + 1)
+        model.set_visualize(False)
     """
     def __init__(self, output_dir: str) -> None:
+        """Initialize the visualizer.
+
+        Args:
+            output_dir: Root directory to store outputs.
+        """
         self.output_dir = output_dir
         self.tmp_states_dir = os.path.join(self.output_dir, 'tmp-states')
         os.makedirs(self.tmp_states_dir, exist_ok=True)
@@ -33,6 +41,7 @@ class Visualizer:
     def _start_background_saver(self):
         """Start a background thread to save images to disk."""
         def background_saver():
+            """Consume queued images and write them to disk."""
             while not self._shutdown_flag:
                 try:
                     item = self.save_queue.get(timeout=1.0)
@@ -45,7 +54,7 @@ class Visualizer:
                     self.save_queue.task_done()
                 except Exception:  # timeout
                     continue
-        
+
         self.saver_thread = threading.Thread(target=background_saver, daemon=True)
         self.saver_thread.start()
 
@@ -62,24 +71,45 @@ class Visualizer:
         if hasattr(self, 'saver_thread') and self.saver_thread.is_alive():
             self.saver_thread.join(timeout=5.0)
 
-    def _plot_hist(self, layer_name: str, layer_idx: int, x: torch.Tensor, 
+    def _plot_hist(self, layer_name: str, layer_idx: int, x: torch.Tensor,
                    name: str, epoch: int, iteration: int):
+        """Plot a histogram for a cached tensor and queue it for saving.
+
+        Args:
+            layer_name: Name of the layer.
+            layer_idx: Layer index in the model.
+            x: Tensor to visualize.
+            name: Cache key name.
+            epoch: Current epoch number.
+            iteration: Global iteration number.
+        """
         with torch.no_grad():
             x_flat = x.reshape(-1)
             min_val, max_val = x_flat.min().item(), x_flat.max().item()
             mean_val, std_val = x_flat.mean().item(), x_flat.std().item()
             counts, bins = torch.histogram(x_flat.cpu(), bins=100, density=False)
             bin_centers = 0.5 * (bins[:-1] + bins[1:])
-        
+
         fig, ax = plt.subplots(figsize=(12, 8))
 
         # plot histogram
-        ax.bar(bin_centers, counts, width=bins[1] - bins[0], 
-                    alpha=0.7, color='blue', edgecolor='black')
-        ax.set_xlabel(f'min: {min_val:.6f}, max: {max_val:.6f}, mean: {mean_val:.6f}, std: {std_val:.6f}')
+        ax.bar(
+            bin_centers,
+            counts,
+            width=bins[1] - bins[0],
+            alpha=0.7,
+            color='blue',
+            edgecolor='black',
+        )
+        ax.set_xlabel(
+            f"min: {min_val:.6f}, max: {max_val:.6f}, "
+            f"mean: {mean_val:.6f}, std: {std_val:.6f}"
+        )
         ax.set_ylabel('Frequency')
-        ax.set_title(f'Epoch{epoch}, Iter{iteration}, Layer{layer_idx}:{layer_name}-{name}')
-        
+        ax.set_title(
+            f"Epoch{epoch}, Iter{iteration}, Layer{layer_idx}:{layer_name}-{name}"
+        )
+
         # save the figure to I/O buffer
         buf = io.BytesIO()
         fig.savefig(buf, format='png')
@@ -88,25 +118,43 @@ class Visualizer:
         buf.close()
 
         # save the figure to a temporary image file through background saver
-        data_dir = os.path.join(self.tmp_states_dir, f'layer{layer_idx:04d}_{layer_name}_{name}')
+        data_dir = os.path.join(
+            self.tmp_states_dir,
+            f'layer{layer_idx:04d}_{layer_name}_{name}',
+        )
         file_name = f'epoch{epoch:04d}_iter{iteration:07d}.png'
         image_path = os.path.join(data_dir, file_name)
         self.save_queue.put((image_data, image_path))
 
         plt.close(fig)
-    
-    def visualize_model_states(self, model: torch.nn.Module, 
+
+    def visualize_model_states(self, model: torch.nn.Module,
                                epoch: int, iteration: int) -> None:
+        """Generate histogram plots for cached layer states.
+
+        Args:
+            model: Model containing visualization caches.
+            epoch: Current epoch number.
+            iteration: Global iteration number.
+        """
         with torch.no_grad():
             layer_idx = 0
             for layer in model.layers:
                 layer_idx += 1
                 if hasattr(layer, 'visualize_cache'):
                     for (name, val) in layer.visualize_cache.items():
-                        self._plot_hist(layer._get_name(), layer_idx, val, name, epoch, iteration)
+                        self._plot_hist(
+                            layer.__class__.__name__,
+                            layer_idx,
+                            val,
+                            name,
+                            epoch,
+                            iteration,
+                        )
                     layer.visualize_cache.clear()
 
     def png2mp4(self):
+        """Convert cached PNGs into MP4 videos and cleanup."""
         print("Converting cached images to MP4 videos...")
 
         # make sure all images are saved
@@ -116,20 +164,23 @@ class Visualizer:
         video_path = os.path.join(self.output_dir, 'videos')
         os.makedirs(video_path, exist_ok=True)
 
-        def _create_video_from_images(image_dir):
+        def _create_video_from_images(image_dir: str) -> None:
+            """Create MP4 videos from PNGs in a directory."""
             # load images from disk and create videos
             if not os.path.exists(image_dir):
                 print("No image directory found, no videos to generate.")
                 return
-            
+
             try:
-                sub_dirs = [d for d in os.listdir(image_dir) 
-                            if os.path.isdir(os.path.join(image_dir, d))]
-                
+                sub_dirs = [
+                    d for d in os.listdir(image_dir)
+                    if os.path.isdir(os.path.join(image_dir, d))
+                ]
+
                 if not sub_dirs:
                     print("No layer directories found, no videos to generate.")
                     return
-                
+
                 for sub_dir in sorted(sub_dirs):
                     try:
                         layer_path = os.path.join(image_dir, sub_dir)

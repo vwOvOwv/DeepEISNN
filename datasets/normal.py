@@ -1,8 +1,9 @@
 """
-datasets.normal - load and preprocess normal datasets 
+datasets.normal - load and preprocess normal datasets
 """
 
 import os
+from typing import Callable, Optional
 
 import torchvision.datasets
 from torchvision import transforms
@@ -12,11 +13,13 @@ from PIL import Image
 
 
 def get_mnist(data_path: str):
-    """
-    Load MNIST.
-    
-    :param data_path: Path to the dataset
-    :type data_path: str
+    """Load MNIST dataset.
+
+    Args:
+        data_path: Path to the dataset.
+
+    Returns:
+        Tuple of (train_set, val_set).
     """
     print("Loading MNIST")
     if not os.path.exists(data_path):
@@ -29,20 +32,22 @@ def get_mnist(data_path: str):
         transforms.ToTensor(),
     ])
 
-    train_set = torchvision.datasets.MNIST(data_path, train=True, 
+    train_set = torchvision.datasets.MNIST(data_path, train=True,
                                            transform=transform_train, download=True)
-    val_set = torchvision.datasets.MNIST(data_path, train=False, 
+    val_set = torchvision.datasets.MNIST(data_path, train=False,
                                          transform=transform_val, download=True)
 
     return train_set, val_set
 
 
 def get_cifar10(data_path: str):
-    """
-    Load CIFAR10.
-    
-    :param data_path: Path to the dataset
-    :type data_path: str
+    """Load CIFAR10 dataset.
+
+    Args:
+        data_path: Path to the dataset.
+
+    Returns:
+        Tuple of (train_set, val_set).
     """
     print("Loading CIFAR10")
     if not os.path.exists(data_path):
@@ -58,7 +63,7 @@ def get_cifar10(data_path: str):
             transforms.ToTensor(),
         ])
 
-    train_set = torchvision.datasets.CIFAR10(data_path, train=True, 
+    train_set = torchvision.datasets.CIFAR10(data_path, train=True,
                                              transform=transform_train, download=True)
     val_set = torchvision.datasets.CIFAR10(data_path, train=False,
                                             transform=transform_val, download=True)
@@ -67,11 +72,13 @@ def get_cifar10(data_path: str):
 
 
 def get_cifar100(data_path: str):
-    """
-    Load CIFAR100.
-    
-    :param data_path: Path to the dataset
-    :type data_path: str
+    """Load CIFAR100 dataset.
+
+    Args:
+        data_path: Path to the dataset.
+
+    Returns:
+        Tuple of (train_set, val_set).
     """
     print("Loading CIFAR100")
     if not os.path.exists(data_path):
@@ -87,26 +94,31 @@ def get_cifar100(data_path: str):
             transforms.ToTensor(),
         ])
 
-    train_set = torchvision.datasets.CIFAR100(data_path, train=True, 
+    train_set = torchvision.datasets.CIFAR100(data_path, train=True,
                                               transform=transform_train, download=True)
-    val_set = torchvision.datasets.CIFAR100(data_path, train=False, 
+    val_set = torchvision.datasets.CIFAR100(data_path, train=False,
                                             transform=transform_val, download=True)
 
     return train_set, val_set
 
 
 class TinyImageNetValDataset(Dataset):
+    """TinyImageNet-200 validation dataset.
+
+    Constructed from the `val` folder and `val_annotations.txt`.
     """
-    TinyImageNet-200 validation dataset.
-    Constructed from the 'val' folder and 'val_annotations.txt' file.
-    """
-    def __init__(self, val_dir: str, class_to_idx: dict, transform=None):
-        """
-        :param val_dir: Path to the validation directory
-        :type val_dir: str
-        :param class_to_idx: Mapping from class names to indices
-        :type class_to_idx: dict
-        :param transform: Transformations applied to images
+    def __init__(
+        self,
+        val_dir: str,
+        class_to_idx: dict[str, int],
+        transform: Optional[Callable[[Image.Image], Image.Image]] = None,
+    ):
+        """Initialize the validation dataset.
+
+        Args:
+            val_dir: Path to the validation directory.
+            class_to_idx: Mapping from class names to indices.
+            transform: Optional transforms applied to images.
         """
         self.val_dir = val_dir
         self.class_to_idx = class_to_idx
@@ -133,9 +145,18 @@ class TinyImageNetValDataset(Dataset):
                 self.labels.append(self.class_to_idx[class_id])
 
     def __len__(self):
+        """Return the number of samples."""
         return len(self.image_paths)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
+        """Get a sample by index.
+
+        Args:
+            idx: Sample index.
+
+        Returns:
+            Tuple of (image, label).
+        """
         image_path = self.image_paths[idx]
         label = self.labels[idx]
         image = Image.open(image_path).convert('RGB')
@@ -147,11 +168,13 @@ class TinyImageNetValDataset(Dataset):
 
 
 def get_tinyimagenet(data_path: str):
-    """
-    Load TinyImageNet-200.
-    
-    :param data_path: Path to the dataset
-    :type data_path: str
+    """Load TinyImageNet-200 dataset.
+
+    Args:
+        data_path: Path to the dataset.
+
+    Returns:
+        Tuple of (train_set, val_set).
     """
     print("Loading TinyImageNet-200")
     os.makedirs(data_path, exist_ok=True)

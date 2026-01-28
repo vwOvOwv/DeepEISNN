@@ -35,15 +35,19 @@ num_classes_dict = {
 }
 
 def build_model(config: dict, device: torch.device, global_rng: np.random.Generator):
-    """
-    Build model according to the config.
-    
-    :param config: Configuration dictionary for the model
-    :type config: dict
-    :param device: Device on which the model will be allocated
-    :type device: torch.device
-    :param global_rng: Global random number generator
-    :type global_rng: np.random.Generator
+    """Build a model according to the configuration.
+
+    Args:
+        config: Configuration dictionary for the model.
+        device: Device on which the model will be allocated.
+        global_rng: Global random number generator.
+
+    Returns:
+        Instantiated model.
+
+    Raises:
+        NotImplementedError: If the model type or architecture is unsupported.
+        ValueError: If a configuration combination is invalid.
     """
     model_type = config['type']
     T = config['T']
@@ -59,43 +63,95 @@ def build_model(config: dict, device: torch.device, global_rng: np.random.Genera
             n_inputs = n_inputs_dict[dataset]
             if seq_input:
                 raise ValueError("MLP does not support sequential input currently.")
-            return SpikingMLP(T, num_layers, n_inputs, num_classes, neuron_config, BN=True)
-        elif arch == 'VGG':
+            return SpikingMLP(
+                T,
+                num_layers,
+                n_inputs,
+                num_classes,
+                neuron_config,
+                BN=True,
+            )
+        if arch == 'VGG':
             dropout = config['dropout']
             light_classifier = config['light_classifier']
             in_channels = in_channels_dict[dataset]
-            return SpikingVGG(T, num_layers, in_channels, num_classes, neuron_config,
-                              light_classifier, dropout, seq_input, BN=True)
-        elif arch == 'ResNet':
+            return SpikingVGG(
+                T,
+                num_layers,
+                in_channels,
+                num_classes,
+                neuron_config,
+                light_classifier,
+                dropout,
+                seq_input,
+                BN=True,
+            )
+        if arch == 'ResNet':
             zero_init_residual = config['zero_init_residual']
             in_channels = in_channels_dict[dataset]
-            # ResNet has BN by default
-            return SpikingResNet(T, num_layers, in_channels, num_classes,
-                                 neuron_config, zero_init_residual, seq_input)
-        else:
-            raise NotImplementedError(f"Model {model_type}:{arch}\
-                                      {num_layers} is not implemented.")
-    elif model_type == 'EI-SNN':
+            # ResNet has BN by default.
+            return SpikingResNet(
+                T,
+                num_layers,
+                in_channels,
+                num_classes,
+                neuron_config,
+                zero_init_residual,
+                seq_input,
+            )
+        raise NotImplementedError(
+            f"Model {model_type}:{arch}{num_layers} is not implemented."
+        )
+
+    if model_type == 'EI-SNN':
         ei_ratio = config['ei_ratio']
         if arch == 'MLP':
             n_inputs = n_inputs_dict[dataset]
             if seq_input:
                 raise ValueError("MLP does not support sequential input currently.")
-            return SpikingEiMLP(T, num_layers, n_inputs, num_classes, 
-                                neuron_config, ei_ratio, device, global_rng)
-        elif arch == 'VGG':
+            return SpikingEiMLP(
+                T,
+                num_layers,
+                n_inputs,
+                num_classes,
+                neuron_config,
+                ei_ratio,
+                device,
+                global_rng,
+            )
+        if arch == 'VGG':
             dropout = config['dropout']
             light_classifier = config['light_classifier']
             in_channels = in_channels_dict[dataset]
-            return SpikingEiVGG(T, num_layers, in_channels, num_classes, 
-                                neuron_config, light_classifier, dropout, seq_input,
-                                ei_ratio, device, global_rng)
-        elif arch == 'ResNet':
+            return SpikingEiVGG(
+                T,
+                num_layers,
+                in_channels,
+                num_classes,
+                neuron_config,
+                light_classifier,
+                dropout,
+                seq_input,
+                ei_ratio,
+                device,
+                global_rng,
+            )
+        if arch == 'ResNet':
             zero_init_residual = config['zero_init_residual']
             in_channels = in_channels_dict[dataset]
-            return SpikingEiResNet(T, num_layers, in_channels, num_classes,
-                                   neuron_config, seq_input, ei_ratio, device,
-                                   global_rng)
-        else:
-            raise NotImplementedError(f"Model {model_type}:{arch}\
-                                      {num_layers} is not implemented.")
+            return SpikingEiResNet(
+                T,
+                num_layers,
+                in_channels,
+                num_classes,
+                neuron_config,
+                seq_input,
+                ei_ratio,
+                device,
+                global_rng,
+            )
+        raise NotImplementedError(
+            f"Model {model_type}:{arch}{num_layers} is not implemented."
+        )
+
+    raise NotImplementedError(f"Model type {model_type} is not implemented.")
