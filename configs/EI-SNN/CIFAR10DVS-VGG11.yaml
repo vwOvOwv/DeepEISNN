@@ -1,25 +1,29 @@
-Parameters:
-  model_type: "EISNN"
-  T: 10
-  arch: "VGG"
-  light_classifier: True
-  num_layers: 11
-  ei_ratio: 4
+# data
+dataset: CIFAR10DVS
+data_path: /home/data10T/data/public/cifar10dvs/cifar10_dvs
 
-  dataset: "CIFAR10DVS"
-  data_path: "/home/data10T/data/public/cifar10dvs/cifar10_dvs"
-  log_dir: "/home/data10T/lpy/LatinSNN/logs/EISNN"
+# model
+type: EI-SNN
+arch: VGG
+num_layers: 11
+T: 10
+ei_ratio: 4
+light_classifier: True
 
-  epochs: 300
-  warmup_epochs: 10
-  batch_size: 32
-  learning_rate: 0.001
-  optimizer: "SGD"
-  momentum: 0.9
-  weight_decay: 0.0005
-  scheduler: "CosALR"
-  loss: "CE"
+dropout: 0.
+neuron:
+  tau: 2.0
 
-  dropout: 0.
-  neuron_config:
-    tau: 2.0
+# training
+epochs: 300
+warmup_epochs: 10
+batch_size: 32
+learning_rate: 0.001
+optimizer: SGD
+momentum: 0.9
+weight_decay: 0.0005
+scheduler: CosALR
+loss: CE
+
+# logging
+output_dir: /home/data4T1/lpy/DeepEISNN/logs/EI-SNN
