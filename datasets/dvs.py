@@ -1,19 +1,35 @@
+"""
+datasets.dvs - load and preprocess DVS datasets 
+"""
+
 import os
+
 import torch
-import torchvision.transforms as transforms
+from torchvision import transforms
+import numpy as np
 from spikingjelly.datasets.dvs128_gesture import DVS128Gesture
 from spikingjelly.datasets.cifar10_dvs import CIFAR10DVS
 from spikingjelly.datasets import split_to_train_test_set, RandomTemporalDelete
-import numpy as np
+
 from utils.dvs_datasets import PackagingClass, function_nda
 
 
-def get_dvs128gesture(data_path, T):
+def get_dvs128gesture(data_path: str, T: int):
+    """
+    Load DVS128Gesture. Inputs are resized to 48x48.
+    
+    :param data_path: Path to the dataset
+    :type data_path: str
+    :param T: Total time steps
+    :type T: int
+    """
+    print("Loading DVS128Gesture")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
 
     transform_train = transforms.Compose([
-        transforms.RandomResizedCrop(128, scale=(0.5, 1.0), interpolation=transforms.InterpolationMode.NEAREST),
+        transforms.RandomResizedCrop(128, scale=(0.5, 1.0),
+                                     interpolation=transforms.InterpolationMode.NEAREST),
         transforms.Resize(size=(48, 48)),
         transforms.RandomHorizontalFlip(),
         RandomTemporalDelete(T_remain=T, batch_first=False),
@@ -23,18 +39,31 @@ def get_dvs128gesture(data_path, T):
         transforms.Resize(size=(48, 48)),
     ])
 
-    train_set = DVS128Gesture(data_path, data_type='frame', frames_number=T, split_by='number', train=True)
-    val_set = DVS128Gesture(data_path, data_type='frame', frames_number=T, split_by='number', train=False)
-    train_set, val_set = PackagingClass(train_set, transform_train), PackagingClass(val_set, transform_val)
+    train_set = DVS128Gesture(data_path, data_type='frame', frames_number=T,
+                              split_by='number', train=True)
+    val_set = DVS128Gesture(data_path, data_type='frame', frames_number=T,
+                            split_by='number', train=False)
+    train_set, val_set = PackagingClass(train_set, transform_train), \
+                        PackagingClass(val_set, transform_val)
     return train_set, val_set
 
 
-def get_cifar10dvs(data_path, T):
+def get_cifar10dvs(data_path: str, T: int):
+    """
+    Load CIFAR10-DVS. Inputs are resized to 48x48.
+    
+    :param data_path: Path to the dataset
+    :type data_path: str
+    :param T: Total time steps
+    :type T: int
+    """
+    print("Loading CIFAR10-DVS")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
 
     def transform_train(data):
-        data = transforms.RandomResizedCrop(128, scale=(0.7, 1.0), interpolation=transforms.InterpolationMode.NEAREST)(data)
+        data = transforms.RandomResizedCrop(128, scale=(0.7, 1.0),
+                                        interpolation=transforms.InterpolationMode.NEAREST)(data)
         resize = transforms.Resize(size=(48, 48))
         data = resize(data).float()
         flip = np.random.random() > 0.5
@@ -47,8 +76,11 @@ def get_cifar10dvs(data_path, T):
         resize = transforms.Resize(size=(48, 48))
         data = resize(data).float()
         return data.float()
-    
+
     dataset = CIFAR10DVS(data_path, data_type='frame', frames_number=T, split_by='number')
-    train_set, val_set = split_to_train_test_set(train_ratio=0.9, origin_dataset=dataset, num_classes=10)
-    train_set, val_set = PackagingClass(train_set, transform_train), PackagingClass(val_set, transform_val)
+    train_set, val_set = split_to_train_test_set(train_ratio=0.9,
+                                                 origin_dataset=dataset,
+                                                 num_classes=10)
+    train_set, val_set = PackagingClass(train_set, transform_train), \
+        PackagingClass(val_set, transform_val)
     return train_set, val_set

@@ -1,6 +1,11 @@
+"""
+models.ResNet - SEW ResNet.
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np
+
 from modules.conv2d import SpikingConv2d, SpikingEiConv2d
 from modules.norm1d import SpikingEiNorm1d
 from modules.norm2d import SpikingBatchNorm2d, SpikingEiNorm2d
@@ -9,7 +14,6 @@ from modules.blocks import SpikingStandardBasicBlock, SpikingStandardBottleneck,
 SpikingEiBasicBlock, SpikingEiBottleneck
 from modules.activation import LIF
 from utils.dim import AddTemporalDim, MergeTemporalDim, SplitTemporalDim
-from typing import Any
 
 __all__ = [
     'SpikingResNet', 'SpikingEiResNet'

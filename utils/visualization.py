@@ -13,6 +13,14 @@ import numpy as np
 from typing import Any, Iterator
 
 class Visualizer:
+    """
+    Usage:
+    >>> model.set_visualize(True)  # Enable visualization
+    >>> output = model(input)  # During forward pass, layers will put data in cache to visualize
+    >>> ...
+    >>> visualizer.visualize_model_states(model, epoch, global_steps + 1)
+    >>> model.set_visualize(False)  # Disable visualization
+    """
     def __init__(self, output_dir: str) -> None:
         self.output_dir = output_dir
         self.tmp_states_dir = os.path.join(self.output_dir, 'tmp-states')

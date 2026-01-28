@@ -1,6 +1,10 @@
+"""
+models.factory - model factory to build different types of models
+"""
+
 import torch
 import numpy as np
-from typing import Optional, Union, Literal, Any
+
 from .MLP import SpikingMLP, SpikingEiMLP
 from .VGG import SpikingVGG, SpikingEiVGG
 from .ResNet import SpikingResNet, SpikingEiResNet
@@ -31,6 +35,16 @@ num_classes_dict = {
 }
 
 def build_model(config: dict, device: torch.device, global_rng: np.random.Generator):
+    """
+    Build model according to the config.
+    
+    :param config: Configuration dictionary for the model
+    :type config: dict
+    :param device: Device on which the model will be allocated
+    :type device: torch.device
+    :param global_rng: Global random number generator
+    :type global_rng: np.random.Generator
+    """
     model_type = config['type']
     T = config['T']
     arch = config['arch']

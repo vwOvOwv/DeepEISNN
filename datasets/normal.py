@@ -1,12 +1,24 @@
+"""
+datasets.normal - load and preprocess normal datasets 
+"""
+
 import os
+
 import torchvision.datasets
-import torchvision.transforms as transforms
+from torchvision import transforms
 from torchtoolbox.transform import Cutout
 from torch.utils.data import Dataset
 from PIL import Image
 
+
 def get_mnist(data_path: str):
-    print("loading MNIST")
+    """
+    Load MNIST.
+    
+    :param data_path: Path to the dataset
+    :type data_path: str
+    """
+    print("Loading MNIST")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
     transform_train = transforms.Compose([
@@ -17,13 +29,22 @@ def get_mnist(data_path: str):
         transforms.ToTensor(),
     ])
 
-    train_set = torchvision.datasets.MNIST(data_path, train=True, transform=transform_train, download=True)
-    val_set = torchvision.datasets.MNIST(data_path, train=False, transform=transform_val, download=True)
-    
+    train_set = torchvision.datasets.MNIST(data_path, train=True, 
+                                           transform=transform_train, download=True)
+    val_set = torchvision.datasets.MNIST(data_path, train=False, 
+                                         transform=transform_val, download=True)
+
     return train_set, val_set
+
 
 def get_cifar10(data_path: str):
-    print("loading CIFAR10")
+    """
+    Load CIFAR10.
+    
+    :param data_path: Path to the dataset
+    :type data_path: str
+    """
+    print("Loading CIFAR10")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
     transform_train = transforms.Compose([
@@ -37,13 +58,22 @@ def get_cifar10(data_path: str):
             transforms.ToTensor(),
         ])
 
-    train_set = torchvision.datasets.CIFAR10(data_path, train=True, transform=transform_train, download=True)
-    val_set = torchvision.datasets.CIFAR10(data_path, train=False, transform=transform_val, download=True)
-    
+    train_set = torchvision.datasets.CIFAR10(data_path, train=True, 
+                                             transform=transform_train, download=True)
+    val_set = torchvision.datasets.CIFAR10(data_path, train=False,
+                                            transform=transform_val, download=True)
+
     return train_set, val_set
 
-def get_cifar100(data_path: str) -> tuple[torchvision.datasets.CIFAR10, torchvision.datasets.CIFAR10]:
-    print("loading CIFAR100")
+
+def get_cifar100(data_path: str):
+    """
+    Load CIFAR100.
+    
+    :param data_path: Path to the dataset
+    :type data_path: str
+    """
+    print("Loading CIFAR100")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
     transform_train = transforms.Compose([
@@ -57,36 +87,49 @@ def get_cifar100(data_path: str) -> tuple[torchvision.datasets.CIFAR10, torchvis
             transforms.ToTensor(),
         ])
 
-    train_set = torchvision.datasets.CIFAR100(data_path, train=True, transform=transform_train, download=True)
-    val_set = torchvision.datasets.CIFAR100(data_path, train=False, transform=transform_val, download=True)
-    
+    train_set = torchvision.datasets.CIFAR100(data_path, train=True, 
+                                              transform=transform_train, download=True)
+    val_set = torchvision.datasets.CIFAR100(data_path, train=False, 
+                                            transform=transform_val, download=True)
+
     return train_set, val_set
 
 
 class TinyImageNetValDataset(Dataset):
+    """
+    TinyImageNet-200 validation dataset.
+    Constructed from the 'val' folder and 'val_annotations.txt' file.
+    """
     def __init__(self, val_dir: str, class_to_idx: dict, transform=None):
+        """
+        :param val_dir: Path to the validation directory
+        :type val_dir: str
+        :param class_to_idx: Mapping from class names to indices
+        :type class_to_idx: dict
+        :param transform: Transformations applied to images
+        """
         self.val_dir = val_dir
         self.class_to_idx = class_to_idx
         self.transform = transform
-        
+
         self.images_dir = os.path.join(val_dir, 'images')
         self.annotations_file = os.path.join(val_dir, 'val_annotations.txt')
-        
+
         self.image_paths = []
         self.labels = []
-        
-        with open(self.annotations_file, 'r') as f:
+
+        with open(self.annotations_file, 'r', encoding='utf-8') as f:
             for line in f:
                 parts = line.strip().split('\t')
                 if len(parts) < 2:
                     continue
-                    
+
                 image_filename = parts[0]
                 class_id = parts[1]
-                
+
                 image_path = os.path.join(self.images_dir, image_filename)
                 self.image_paths.append(image_path)
-                
+
                 self.labels.append(self.class_to_idx[class_id])
 
     def __len__(self):
@@ -104,9 +147,15 @@ class TinyImageNetValDataset(Dataset):
 
 
 def get_tinyimagenet(data_path: str):
-    print("loading TinyImageNet-200")
-    os.makedirs(data_path, exist_ok=True)
+    """
+    Load TinyImageNet-200.
     
+    :param data_path: Path to the dataset
+    :type data_path: str
+    """
+    print("Loading TinyImageNet-200")
+    os.makedirs(data_path, exist_ok=True)
+
     transform_train = transforms.Compose([
         transforms.RandomResizedCrop(32, scale=(0.08, 1.0)),
         transforms.RandomHorizontalFlip(p=0.5),
@@ -124,7 +173,7 @@ def get_tinyimagenet(data_path: str):
     val_dir = os.path.join(data_path, 'val')
 
     train_set = torchvision.datasets.ImageFolder(train_dir, transform=transform_train)
-    
+
     class_to_idx = train_set.class_to_idx
     val_set = TinyImageNetValDataset(
         val_dir=val_dir,
