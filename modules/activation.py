@@ -1,4 +1,4 @@
-"""Spiking neurons"""
+"""Customed activations."""
 
 from typing import Any, Union
 
@@ -13,7 +13,7 @@ surrogate_dict = {
 }
 
 class LIF(LIFNode):
-    """Leaky integrate-and-fire neuron wrapper with named surrogate functions."""
+    """LIF neuron wrapper with named surrogate functions."""
 
     def __init__(self, tau: float = 2.0, surrogate_function: str = 'sigmoid',
                  step_mode: str = 'm', decay_input: bool = False,
@@ -41,7 +41,7 @@ class LIF(LIFNode):
         *args: Any,
         **kwargs: Any,
     ) -> Union[torch.Tensor, None]:
-        """Compute spikes for the given input.
+        """Run a forward pass.
 
         Args:
             x: Input tensor.
@@ -49,7 +49,7 @@ class LIF(LIFNode):
             **kwargs: Additional keyword arguments forwarded to parent.
 
         Returns:
-            Spike tensor or None depending on the parent implementation.
+            Spike tensor.
         """
         spike = super().forward(x, *args, **kwargs)
         return spike

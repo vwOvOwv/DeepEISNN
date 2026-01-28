@@ -1,6 +1,4 @@
-"""
-models.ResNet - SEW ResNet.
-"""
+"""SEW-ResNet."""
 
 import numpy as np
 import torch
@@ -47,13 +45,13 @@ class SpikingResNet(nn.Module):
     def __init__(self, T: int, num_layers: int, in_channels: int, n_outputs: int,
                  neuron_config: dict, zero_init_residual: bool = False,
                  seq_input: bool = False):
-        """Initialize a spiking ResNet model.
+        """Initialize model.
 
         Args:
             T: Number of time steps.
             num_layers: ResNet depth (e.g., 18, 34).
             in_channels: Number of input channels.
-            n_outputs: Number of output classes.
+            n_outputs: Dimension of output.
             neuron_config: Spiking neuron configuration.
             zero_init_residual: Whether to zero-initialize residual branches.
             seq_input: Whether input is already sequential (T, B, ...).
@@ -212,10 +210,10 @@ class SpikingEiResNet(nn.Module):
             T: Number of time steps.
             num_layers: ResNet depth (e.g., 18, 34).
             in_channels: Number of input channels.
-            n_outputs: Number of output classes.
+            n_outputs: Dimension of output.
             neuron_config: Spiking neuron configuration.
             seq_input: Whether input is already sequential (T, B, ...).
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # excitatory neurons / # inhibitory neurons.
             device: Device for parameter allocation.
             rng: Random generator for initialization.
         """
@@ -297,7 +295,7 @@ class SpikingEiResNet(nn.Module):
 
         Args:
             block: Residual block class.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # excitatory neurons / # inhibitory neurons.
             neuron_config: Spiking neuron configuration.
             T: Number of time steps.
             out_channels: Output channel count for the stage.

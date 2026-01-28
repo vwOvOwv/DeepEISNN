@@ -1,4 +1,5 @@
 """Utilities for adding, merging, and splitting temporal dimensions."""
+
 import torch
 from torch import nn
 

@@ -1,6 +1,4 @@
-"""
-models.factory - model factory to build different types of models
-"""
+"""Model factory to build different types of models."""
 
 import torch
 import numpy as np

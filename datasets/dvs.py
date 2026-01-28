@@ -1,6 +1,4 @@
-"""
-datasets.dvs - load and preprocess DVS datasets
-"""
+"""Load and preprocess DVS datasets."""
 
 import os
 

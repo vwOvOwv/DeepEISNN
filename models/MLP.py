@@ -1,6 +1,4 @@
-"""
-models.MLP - multi-layer perceptron with spiking neurons
-"""
+"""Multi-layer perceptron."""
 
 from typing import Any
 
@@ -32,7 +30,7 @@ class SpikingMLP(nn.Module):
 
     def __init__(self, T: int, num_layers: int, n_inputs: int, n_outputs: int,
                  neuron_config: dict[str, Any], BN: bool):
-        """Initialize a spiking MLP.
+        """Initialize model.
 
         Args:
             T: Total time steps.
@@ -119,12 +117,12 @@ class SpikingMLP(nn.Module):
 
 
 class SpikingEiMLP(nn.Module):
-    """E/I MLP with spiking neurons and E/I normalization."""
+    """E-I MLP with spiking neurons."""
 
     def __init__(self, T: int, num_layers: int, n_inputs: int, n_outputs: int,
                  neuron_config: dict[str, Any], ei_ratio: int,
                  device: torch.device, rng: np.random.Generator):
-        """Initialize an E/I spiking MLP.
+        """Initialize model.
 
         Args:
             T: Total time steps.
@@ -132,7 +130,7 @@ class SpikingEiMLP(nn.Module):
             n_inputs: Input feature dimension.
             n_outputs: Output feature dimension.
             neuron_config: Configuration of spiking neurons.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # excitatory neurons / # inhibitory neurons.
             device: Device for parameter allocation.
             rng: Random generator for initialization.
         """

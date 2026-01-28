@@ -1,5 +1,4 @@
-"""Visualization utilities for spiking model internals."""
-
+"""Visualization utilities for model internals."""
 
 import io
 import os

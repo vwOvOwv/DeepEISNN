@@ -1,4 +1,4 @@
-"""Custom optimizers for spiking E-I models."""
+"""Custom optimizers for models."""
 
 from typing import Any, Callable, Iterable, Optional
 

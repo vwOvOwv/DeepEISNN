@@ -1,4 +1,4 @@
-"""Spiking convolutional layers, including E-I variants."""
+"""Convolution layers."""
 
 from typing import Any, Union
 
@@ -12,7 +12,7 @@ __all__ = [
 
 
 class SpikingConv2d(nn.Module):
-    """Standard spiking 2D convolution wrapper."""
+    """2D convolution wrapper."""
 
     def __init__(self, in_channels: int, out_channels: int,
                  kernel_size: Union[int, tuple[int, int]],
@@ -21,7 +21,7 @@ class SpikingConv2d(nn.Module):
                  dilation: Union[int, tuple[int, int]] = 1,
                  groups: int = 1, bias: bool = False,
                  padding_mode: str = 'zeros'):
-        """Initialize a standard spiking 2D convolution wrapper.
+        """Initialize module.
 
         Args:
             in_channels: Number of input channels.
@@ -74,7 +74,8 @@ class SpikingConv2d(nn.Module):
 
 
 class SpikingEiConv2d(nn.Module):
-    """E-I spiking 2D convolution with dynamic initialization."""
+    """E-I 2D convolution with dynamic initialization, 
+    including E-to-E and E-to-I paths."""
 
     def __init__(self, in_channels: int, out_channels: int, ei_ratio: int,
                  device: torch.device, rng: np.random.Generator,
@@ -84,12 +85,12 @@ class SpikingEiConv2d(nn.Module):
                  dilation: Union[int, tuple[int, int]] = 1,
                  groups: int = 1, bias: bool = False,
                  padding_mode: str = 'zeros') -> None:
-        """Initialize an E-I spiking 2D convolution layer.
+        """Initialize module.
 
         Args:
             in_channels: Number of input channels.
             out_channels: Number of excitatory output channels.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # E neurons / # I neurons.
             device: Device for parameter allocation.
             rng: Random generator for initialization.
             kernel_size: Size of the convolution kernel.
@@ -106,12 +107,15 @@ class SpikingEiConv2d(nn.Module):
         self.rng = rng
         self.device = device
 
+        # E-to-E conv
         self.conv_ee = nn.Conv2d(in_channels, self.n_e, kernel_size, stride,
                                  padding, dilation, groups, bias, padding_mode,
                                  device=self.device)
+        # E-to-I conv
         self.conv_ie = nn.Conv2d(in_channels, self.n_i, kernel_size, stride,
                                  padding, dilation, groups, bias, padding_mode,
                                  device=self.device)
+        
         self.in_features = int(np.prod(self.conv_ee.weight.shape[1:]))
         self.exp_scale: float | None = None
 
@@ -124,7 +128,7 @@ class SpikingEiConv2d(nn.Module):
         with torch.no_grad():
             Var_x = batch_stats['Var_x']
             E_x_square = batch_stats['E_x_square']
-            self.exp_scale = np.sqrt(Var_x / (self.in_features * (E_x_square + Var_x)))
+            self.exp_scale = np.sqrt(Var_x / (self.in_features * (E_x_square + Var_x))) # Eq. 53 in paper
 
             weight_ee_np = self.rng.exponential(
                 scale=self.exp_scale,

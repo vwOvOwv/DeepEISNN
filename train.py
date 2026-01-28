@@ -1,6 +1,5 @@
 """Training script."""
 
-
 import argparse
 import os
 import random
@@ -34,7 +33,7 @@ def get_args_and_config():
         is disabled.
 
     Raises:
-        ValueError: If scratch/resume arguments are invalid.
+        ValueError: If scratch or resume arguments are invalid.
         FileNotFoundError: If a referenced config or checkpoint file is missing.
         KeyError: If a resume checkpoint is missing configuration.
     """
@@ -72,7 +71,7 @@ def get_args_and_config():
     else:   # args.resume is not None
         if not os.path.isfile(args.resume):
             raise FileNotFoundError(f"Checkpoint file {args.resume} not found.")
-        checkpoint = torch.load(args.resume, map_location='cpu')
+        checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
         if 'config' not in checkpoint:
             raise KeyError(f"Config file not found in checkpoint {args.resume}.")
         config = checkpoint['config']

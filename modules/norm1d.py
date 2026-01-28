@@ -1,4 +1,4 @@
-"""Spiking normalization layers for 1D inputs."""
+"""Normalization layers for 1D inputs."""
 
 from typing import Any, Union
 
@@ -11,11 +11,11 @@ __all__ = [
 ]
 
 class SpikingBatchNorm1d(nn.Module):
-    """Batch normalization wrapper with visualization cache."""
+    """Batch normalization wrapper."""
 
     def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1,
                  affine: bool = True, track_running_stats: bool = True) -> None:
-        """Initialize a batch normalization wrapper with visualization hooks.
+        """Initialize module.
 
         Args:
             num_features: Number of feature channels.
@@ -64,16 +64,18 @@ class SpikingBatchNorm1d(nn.Module):
 
 
 class SpikingEiNorm1d(nn.Module):
-    """E-I normalization layer for 1D inputs."""
+    """E-I layer for 1D inputs. This layer includes I-to-E path and 
+    integrates inputs to E neurons. There is no explicit normalization
+    (sub mean, div std) operation in this layer."""
 
     def __init__(self, num_features: int, prev_in_features: int, ei_ratio: int,
                  device: torch.device, output_layer: bool = False):
-        """Initialize an E-I normalization layer for 1D inputs.
+        """Initialize module.
 
         Args:
             num_features: Number of excitatory features.
             prev_in_features: Previous layer input dimension.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # E neurons / # I neurons.
             device: Device for parameter allocation.
             output_layer: Whether this is the final output layer.
         """
@@ -88,11 +90,17 @@ class SpikingEiNorm1d(nn.Module):
             torch.ones(self.n_e, self.n_i, device=self.device) / self.n_i,
             requires_grad=True,
         )
-        self.alpha = nn.Parameter(torch.empty(1, self.n_i, device=self.device), requires_grad=True)
-        self.gain = nn.Parameter(torch.ones(1, self.n_e, device=self.device), requires_grad=True)
-        self.bias = nn.Parameter(torch.zeros(1, self.n_e, device=self.device), requires_grad=True)
+        self.alpha = nn.Parameter(
+            torch.empty(1, self.n_i, device=self.device), 
+            requires_grad=True) # $g_I$ in paper
+        self.gain = nn.Parameter(
+            torch.ones(1, self.n_e, device=self.device), 
+            requires_grad=True)   # $g_E$ in paper
+        self.bias = nn.Parameter(
+            torch.zeros(1, self.n_e, device=self.device), 
+            requires_grad=True)  # $b_E$ in paper
 
-        self.weight_ei.register_hook(lambda grad: grad / self.prev_in_features)
+        self.weight_ei.register_hook(lambda grad: grad / self.prev_in_features) # point-wise convolution weights
 
         self.visualize_cache = {}
         self._need_visualize = False
@@ -105,7 +113,7 @@ class SpikingEiNorm1d(nn.Module):
             Var_x = batch_stats['Var_x']
             E_x_square = batch_stats['E_x_square']
             self.alpha.data = torch.ones(1, self.n_i, device=self.device) / \
-                np.sqrt(self.prev_in_features) * np.sqrt(E_x_square + Var_x) / E_x
+                np.sqrt(self.prev_in_features) * np.sqrt(E_x_square + Var_x) / E_x  # Eq. 54 in paper
 
     def _clamp_parameters(self) -> None:
         """Clamp parameters to be non-negative."""
@@ -139,6 +147,7 @@ class SpikingEiNorm1d(nn.Module):
         has_zero = (inputs == 0.).any()
 
         if has_zero:
+            # adaptive stabilization
             mask = inputs == 0.
             tmp = inputs.clone()
             tmp[mask] = float('inf')
@@ -155,7 +164,7 @@ class SpikingEiNorm1d(nn.Module):
         return inputs
 
     def forward(self, inputs: tuple[torch.Tensor, torch.Tensor, Union[dict, None]]):
-        """Apply E-I normalization and compute balanced currents.
+        """Run a forward pass
 
         Args:
             inputs: Tuple of (I_ee, I_ie, batch_stats).
@@ -169,14 +178,15 @@ class SpikingEiNorm1d(nn.Module):
             self._dynamic_init(batch_stats)
             self._inited = True
 
-        I_ei = torch.matmul(self.weight_ei, I_ie.T).T  # shape: (B, n_e)
+        I_ei = torch.matmul(self.weight_ei, I_ie.T).T
 
-        I_balanced = I_ee - I_ei  # shape: (B, n_e)
+        I_balanced = I_ee - I_ei
 
         I_shunting = torch.matmul(
             self.weight_ei,
             (self.alpha * I_ie).T,
-        ).T  # shape: (B, n_e)
+        ).T
+
         # Avoid division by zero in shunting term.
         I_shunting_adjusted = self._replace_zero_with_second_min(I_shunting)
 

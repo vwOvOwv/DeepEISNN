@@ -1,4 +1,4 @@
-"""Spiking normalization layers for 2D feature maps."""
+"""Normalization layers for 2D feature maps."""
 
 from typing import Any, Union
 
@@ -12,11 +12,11 @@ __all__ = [
 
 
 class SpikingBatchNorm2d(nn.Module):
-    """Batch normalization wrapper with visualization cache."""
+    """Batch normalization wrapper."""
 
     def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1,
                  affine: bool = True, track_running_stats: bool = True):
-        """Initialize a batch normalization wrapper with visualization hooks.
+        """Initialize module.
 
         Args:
             num_features: Number of feature channels.
@@ -66,16 +66,18 @@ class SpikingBatchNorm2d(nn.Module):
 
 
 class SpikingEiNorm2d(nn.Module):
-    """E-I normalization layer for 2D inputs."""
+    """E-I layer for 2D inputs. This layer includes I-to-E path and 
+    integrates inputs to E neurons. There is no explicit normalization
+    (sub mean, div std) operation in this layer."""
 
     def __init__(self, num_features: int, prev_in_features: int,
                  ei_ratio: int, device: torch.device):
-        """Initialize an E-I normalization layer for 2D inputs.
+        """Initialize module.
 
         Args:
             num_features: Number of excitatory features.
             prev_in_features: Previous layer input dimension.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # E neurons / # I neurons.
             device: Device for parameter allocation.
         """
         super().__init__()
@@ -88,7 +90,7 @@ class SpikingEiNorm2d(nn.Module):
             torch.ones(self.n_e, self.n_i, device=self.device) / self.n_i,
             requires_grad=True,
         )
-        self.alpha = nn.Parameter(
+        self.alpha = nn.Parameter(  
             torch.empty(self.n_i, 1, 1, device=self.device),
             requires_grad=True,
         )
@@ -118,7 +120,7 @@ class SpikingEiNorm2d(nn.Module):
             / np.sqrt(self.prev_in_features)
             * np.sqrt(E_x_square + Var_x)
             / E_x
-        )
+        )  # Eq. 54 in paper
 
     def _set_visualize_cache(self, *args: torch.Tensor) -> None:
         """Cache tensors for visualization."""
@@ -144,6 +146,7 @@ class SpikingEiNorm2d(nn.Module):
         has_zero = (inputs == 0.).any()
 
         if has_zero:
+            # adaptive stabilization
             mask = inputs == 0.
             tmp = inputs.clone()
             tmp[mask] = float('inf')
@@ -167,7 +170,7 @@ class SpikingEiNorm2d(nn.Module):
             self.gain.data.clamp_(min=0)
 
     def forward(self, inputs: tuple[torch.Tensor, torch.Tensor, Union[dict, None]]):
-        """Apply E-I normalization and compute balanced currents.
+        """Run a forward pass.
 
         Args:
             inputs: Tuple of (I_ee, I_ie, batch_stats).

@@ -10,10 +10,10 @@ __all__ = [
 
 
 class SpikingLinear(nn.Module):
-    """Linear layer wrapper with visualization cache support."""
+    """Linear layer wrapper."""
 
     def __init__(self, in_features: int, out_features: int, bias: bool = True):
-        """Initialize a linear layer with visualization hooks.
+        """Initialize module.
 
         Args:
             in_features: Number of input features.
@@ -62,17 +62,17 @@ class SpikingLinear(nn.Module):
 
 
 class SpikingEiLinear(nn.Module):
-    """E-I linear layer with dynamic initialization and visualization cache."""
+    """E-I linear layer."""
 
     def __init__(self, in_features: int, out_features: int, ei_ratio: int,
                  device: torch.device, rng: np.random.Generator,
                  output_layer: bool = False):
-        """Initialize an E-I linear layer.
+        """Initialize module.
 
         Args:
             in_features: Number of input features.
             out_features: Number of excitatory output features.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # E neurons / # I neurons.
             device: Device for parameter allocation.
             rng: Random generator for initialization.
             output_layer: Whether this is the final output layer.
@@ -168,8 +168,8 @@ class SpikingEiLinear(nn.Module):
             self._dynamic_init(batch_stats)
             self._inited = True
 
-        I_ee = torch.matmul(self.weight_ee, x.T).T  # (*, n_e)
-        I_ie = torch.matmul(self.weight_ie, x.T).T  # (*, n_i)
+        I_ee = torch.matmul(self.weight_ee, x.T).T
+        I_ie = torch.matmul(self.weight_ie, x.T).T
         if self._need_visualize:
             self._set_visualize_cache(x, I_ee, I_ie)
         if self.output_layer:

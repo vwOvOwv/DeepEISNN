@@ -10,7 +10,7 @@ from modules.norm2d import SpikingBatchNorm2d, SpikingEiNorm2d
 from utils.dim import MergeTemporalDim, SplitTemporalDim
 
 class SpikingStandardBasicBlock(nn.Module):
-    """Standard spiking ResNet basic block."""
+    """Standard ResNet basic block."""
 
     expansion = 1
 
@@ -76,14 +76,14 @@ class SpikingStandardBasicBlock(nn.Module):
 
 
 class SpikingStandardBottleneck(nn.Module):
-    """Standard spiking ResNet bottleneck block."""
+    """Standard ResNet bottleneck block."""
 
     expansion = 4
 
     def __init__(self, T: int, in_channels: int, out_channels: int,
                  neuron_config: dict, stride: int = 1,
                  downsample: nn.Module = None):
-        """Initialize a spiking bottleneck block.
+        """Initialize module.
 
         Args:
             T: Number of time steps.
@@ -156,7 +156,7 @@ class SpikingStandardBottleneck(nn.Module):
 
 
 class SpikingEiBasicBlock(nn.Module):
-    """E-I spiking ResNet basic block with separate E-I paths."""
+    """E-I ResNet basic block."""
 
     expansion = 1
 
@@ -164,14 +164,14 @@ class SpikingEiBasicBlock(nn.Module):
                  neuron_config: dict, ei_ratio: int, device: torch.device,
                  rng: np.random.Generator, stride: int = 1,
                  downsample: nn.Module = None):
-        """Initialize an E-I spiking basic block.
+        """Initialize module.
 
         Args:
             T: Number of time steps.
             in_channels: Input channel count.
             out_channels: Output channel count.
             neuron_config: Parameters for the spiking neuron.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # E neurons / # I neurons.
             device: Device for parameter initialization.
             rng: Random generator for initialization.
             stride: Stride for the first convolution.
@@ -253,7 +253,7 @@ class SpikingEiBasicBlock(nn.Module):
 
 
 class SpikingEiBottleneck(nn.Module):
-    """E-I spiking ResNet bottleneck block."""
+    """E-I ResNet bottleneck block."""
 
     expansion = 4
 
@@ -261,14 +261,14 @@ class SpikingEiBottleneck(nn.Module):
                  neuron_config: dict, ei_ratio: int, device: torch.device,
                  rng: np.random.Generator, stride: int = 1,
                  downsample: nn.Module = None):
-        """Initialize an E-I spiking bottleneck block.
+        """Initialize module.
 
         Args:
             T: Number of time steps.
             in_channels: Input channel count.
             out_channels: Output channel count.
             neuron_config: Parameters for the spiking neuron.
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # E neurons / # I neurons.
             device: Device for parameter initialization.
             rng: Random generator for initialization.
             stride: Stride for the second convolution.

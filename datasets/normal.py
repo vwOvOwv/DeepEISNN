@@ -1,6 +1,4 @@
-"""
-datasets.normal - load and preprocess normal datasets
-"""
+"""Load and preprocess normal datasets."""
 
 import os
 from typing import Callable, Optional

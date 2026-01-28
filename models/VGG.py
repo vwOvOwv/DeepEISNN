@@ -1,4 +1,4 @@
-"""VGG models for spiking neural networks."""
+"""VGG models."""
 
 from typing import Any
 
@@ -42,18 +42,18 @@ conv_config = {
 }
 
 class SpikingVGG(nn.Module):
-    """Standard VGG-style spiking network."""
+    """Standard VGG."""
 
     def __init__(self, T: int, num_layers: int, in_channels: int, n_outputs: int,
                  neuron_config: dict[str, Any], light_classifier: bool,
                  dropout: float, seq_input: bool, BN: bool):
-        """Initialize a spiking VGG model.
+        """Initialize model.
 
         Args:
             T: Number of time steps.
             num_layers: VGG depth (e.g., 16, 19).
             in_channels: Number of input channels.
-            n_outputs: Number of output classes.
+            n_outputs: Dimension of output.
             neuron_config: Spiking neuron configuration.
             light_classifier: Whether to use a lightweight classifier head.
             dropout: Dropout probability.
@@ -193,13 +193,13 @@ class SpikingVGG(nn.Module):
                 layer.set_visualize(flag)
 
 class SpikingEiVGG(nn.Module):
-    """VGG-style spiking network with E/I layers."""
+    """VGG with E-I layers."""
 
     def __init__(self, T: int, num_layers: int, in_channels: int, n_outputs: int,
                  neuron_config: dict[str, Any], light_classifier: bool,
                  dropout: float, seq_input: bool, ei_ratio: int,
                  device: torch.device, rng: np.random.Generator):
-        """Initialize an E/I spiking VGG model.
+        """Initialize model.
 
         Args:
             T: Number of time steps.
@@ -210,7 +210,7 @@ class SpikingEiVGG(nn.Module):
             light_classifier: Whether to use a lightweight classifier head.
             dropout: Dropout probability.
             seq_input: Whether input is already sequential (T, B, ...).
-            ei_ratio: Excitatory-to-inhibitory ratio.
+            ei_ratio: # excitatory neurons / # inhibitory neurons.
             device: Device for parameter allocation.
             rng: Random generator for initialization.
         """
