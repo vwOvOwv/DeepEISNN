@@ -28,7 +28,7 @@ def get_args_and_config():
     parser.add_argument('--resume', type=str, default=None,
                         help="Resume from checkpoint, need path to checkpoint")
     parser.add_argument('--log', type=int, default=1, choices=[0, 1, 2],
-                        help='Log mode: 0=off, 1=loss/acc/checkpoint, 2=heavy logging')
+                        help='Log mode: 0=off, 1=loss/acc/ckpt, 2=loss/acc/ckpt/vis')
     parser.add_argument('--notes', type=str, default=None,
                         help="Experiment notes for logging")
     parser.add_argument('--seed', type=int, default=2025, 
@@ -184,7 +184,6 @@ def train_one_epoch(model, epoch, config, train_loader, optimizer_list,
 
         if visualizer is not None and model.get_visualize():
             visualizer.visualize_model_states(model, epoch, global_steps + 1)
-            visualizer.visualize_grad_flow(model.named_parameters(), epoch, global_steps + 1)
             model.set_visualize(False)
             
         for optimizer in optimizer_list:
@@ -248,8 +247,13 @@ if __name__ == '__main__':
                         config=config,
                         dir=output_dir) if args.log > 0 else None
                         
-    visualizer = Visualizer(output_dir) if args.log > 1 else None
-
+    visualizer = None
+    if args.log > 1:
+        if config['arch'] in ['VGG']:
+            visualizer = Visualizer(output_dir)
+        else:
+            print(f"Visualization for {config['arch']} is not supported currently.")
+    
     # build data loader
     dataset_func = {'MNIST': normal.get_mnist,
                     'CIFAR10': normal.get_cifar10,
