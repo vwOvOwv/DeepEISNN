@@ -19,7 +19,6 @@ class SpikingLinear(nn.Module):
 
     def _set_visualize_cache(self, *args) -> None:
         with torch.no_grad():
-            print("called")
             input, output = args
             self.visualize_cache['param1:weight'] = self.linear.weight.detach()
             bias = self.linear.bias.detach() if self.linear.bias is not None else None

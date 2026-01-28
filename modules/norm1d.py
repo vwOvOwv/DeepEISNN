@@ -9,7 +9,6 @@ __all__ = [
     'SpikingBatchNorm1d', 'SpikingEiNorm1d'
 ]
 
-
 class SpikingBatchNorm1d(nn.Module):
     def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1,
                  affine: bool = True, track_running_stats: bool = True) -> None:
@@ -77,14 +76,6 @@ class SpikingEiNorm1d(nn.Module):
             self.gain.data.clamp_(min=0)
 
     def _set_visualize_cache(self, *args) -> None:
-        """
-        Set visualization cache of `SpikingEiNorm1d`.
-        Args:
-            I_ei (torch.Tensor): Input inhibitory current.
-            I_balanced (torch.Tensor): Balanced input current.
-            I_shunting (torch.Tensor): Shunting inhibitory current.
-            I_int (torch.Tensor): Integrated current.
-        """
         with torch.no_grad():
             I_ei, I_balanced, I_shunting, I_int = args
             self.visualize_cache['param1: weight_ei'] = self.weight_ei.detach()
