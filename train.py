@@ -62,19 +62,28 @@ def get_args_and_config():
         config = checkpoint['config']
         print(f'Resuming training from checkpoint: {args.resume}')
 
-    # add time stamp to output dir
-    exp_id = time.strftime('%Y%m%d-%H%M%S')
-    if args.notes is not None:
-        exp_id += f'-{args.notes}'
-    output_dir = os.path.join(config['output_dir'], exp_id)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
+    # add time stamp to output dir if logging is needed
+    if args.log > 0:
+        exp_id = time.strftime('%Y%m%d-%H%M%S') + f"-{config['type']}" + \
+                f"-{config['dataset']}-{config['arch']}{config['num_layers']}" + \
+                f"-T{config['T']}-ep{config['epochs']}-bs{config['batch_size']}-lr{config['learning_rate']}" + \
+                f"-{config['optimizer']}-{config['scheduler']}" + \
+                f"-mo{config['momentum']}-wd{config['weight_decay']}" + \
+                f"-seed{args.seed}"
+        if args.notes is not None:
+            notes = args.notes.strip().replace(' ', '-').replace('_', '-')
+            exp_id += f"-{notes}"
+        output_dir = os.path.join(config['output_dir'], exp_id)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
 
-    # backup config file
-    with open(os.path.join(output_dir, 'config-backup.yaml'), 'w') as f:
-        yaml.dump(config, f)
+        # backup config file
+        with open(os.path.join(output_dir, 'config-backup.yaml'), 'w') as f:
+            yaml.dump(config, f)
     
-    return args, config, output_dir
+        return args, config, output_dir
+    else:
+        return args, config, None
 
 def set_random_state(seed: int):
     random.seed(seed)
@@ -154,7 +163,7 @@ def train_one_epoch(model, epoch, config, train_loader, optimizer_list,
     loss = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-    tqdm_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch + 1}/{config['epochs']}")
+    tqdm_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch}/{config['epochs']}")
 
     iter_per_epoch = len(train_loader)
     warmup_steps = config.get('warmup_epochs', 0) * iter_per_epoch
@@ -163,7 +172,7 @@ def train_one_epoch(model, epoch, config, train_loader, optimizer_list,
         model.set_visualize(True)
 
     for idx, (inputs, labels) in enumerate(tqdm_bar):
-        global_steps = epoch * iter_per_epoch + idx
+        global_steps = (epoch - 1) * iter_per_epoch + idx
         inputs, labels = inputs.to(device), labels.to(device)
         outputs = model(inputs)
         batch_loss = criterion(outputs, labels)
@@ -174,8 +183,8 @@ def train_one_epoch(model, epoch, config, train_loader, optimizer_list,
         batch_loss.backward()
 
         if visualizer is not None and model.get_visualize():
-            visualizer.visualize_model_states(model, epoch + 1, global_steps + 1)
-            visualizer.visualize_grad_flow(model.named_parameters(), epoch + 1, global_steps + 1)
+            visualizer.visualize_model_states(model, epoch, global_steps + 1)
+            visualizer.visualize_grad_flow(model.named_parameters(), epoch, global_steps + 1)
             model.set_visualize(False)
             
         for optimizer in optimizer_list:
@@ -188,15 +197,14 @@ def train_one_epoch(model, epoch, config, train_loader, optimizer_list,
         top1.update(acc1.item(), labels.numel())
         top5.update(acc5.item(), labels.numel())
         
-        if global_steps <= warmup_steps and config.get('warmup_epochs', 0) > 0:
-            current_lr = warmup_scheduler_list[0].get_last_lr()[0]
+        if global_steps < warmup_steps and config.get('warmup_epochs', 0) > 0:
             for scheduler in warmup_scheduler_list:
                 scheduler.step()
         else:
-            current_lr = scheduler_list[0].get_last_lr()[0]
             for scheduler in scheduler_list:
                 scheduler.step()
         
+        current_lr = optimizer_list[0].param_groups[0]['lr']
         tqdm_bar.set_postfix(lr=current_lr, loss=loss.avg, acc1=top1.avg, acc5=top5.avg)
     
     return loss.avg, top1.avg, top5.avg
@@ -293,12 +301,13 @@ if __name__ == '__main__':
         criterion = torch.nn.CrossEntropyLoss().to(device)
     else:
         raise NotImplementedError(f"Loss {criterion} is not implemented.")
+    
     # resume from checkpoint
-    start_epoch = 0
+    start_epoch = 1
     best_val_acc1 = 0.
     if args.resume is not None:
         print(f"===> loading checkpoint '{args.resume}'")
-        checkpoint = torch.load(args.resume, map_location=device)
+        checkpoint = torch.load(args.resume, map_location=device, weights_only=False)
         start_epoch = checkpoint['next_epoch']
         best_val_acc1 = checkpoint['best_val_acc']
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -308,11 +317,20 @@ if __name__ == '__main__':
             scheduler.load_state_dict(checkpoint['warmup_scheduler_state_dict'][idx])
         for idx, scheduler in enumerate(scheduler_list):
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'][idx])
+        torch.set_rng_state(checkpoint['rng_state'].cpu())
+        cuda_states = [t.cpu() for t in checkpoint['cuda_rng_state']]
+        torch.cuda.set_rng_state_all(cuda_states)
+        np.random.set_state(checkpoint['np_rng_state'])
+        random.setstate(checkpoint['py_rng_state'])
         print(f"===> loaded checkpoint (epoch {checkpoint['next_epoch']})")
 
     # train
     print(f"\nStart training from epoch {start_epoch}")
-    for epoch in range(start_epoch, config['epochs']):
+    if args.log > 0:
+        ckpt_save_path = os.path.join(output_dir, 'ckpts')
+        if not os.path.exists(ckpt_save_path):
+            os.makedirs(ckpt_save_path, exist_ok=True)
+    for epoch in range(start_epoch, config['epochs'] + 1):
         loss, acc1, acc5 = train_one_epoch(
             model, epoch, config, train_loader, optimizer_list, scheduler_list, 
             warmup_scheduler_list, visualizer, criterion, device
@@ -325,8 +343,8 @@ if __name__ == '__main__':
             best_val_acc1 = val_acc1
             is_best = True
 
-        # logging
-        if args.log > 0 and logger is not None:
+        # logging and save checkpoints
+        if args.log > 0:
             log_dict = {
                 'train/loss': loss,
                 'train/acc1': acc1,
@@ -337,11 +355,9 @@ if __name__ == '__main__':
                 'train/lr': optimizer_list[0].param_groups[0]['lr'],
                 'epoch': epoch
             }
-            logger.log(log_dict)
+            logger.log(log_dict, step=epoch)
 
-        # save checkpoints
-        if args.log > 0:
-            latest_path = os.path.join(output_dir, 'ckpt-latest.pth')
+            latest_path = os.path.join(output_dir, 'ckpts', 'ckpt-latest.pth')
             torch.save({
                 'next_epoch': epoch + 1,
                 'model_state_dict': model.state_dict(),
@@ -349,10 +365,14 @@ if __name__ == '__main__':
                 'warmup_scheduler_state_dict': [scheduler.state_dict() for scheduler in warmup_scheduler_list],
                 'scheduler_state_dict': [scheduler.state_dict() for scheduler in scheduler_list],
                 'best_val_acc': best_val_acc1,
-                'config': config
+                'config': config,
+                'rng_state': torch.get_rng_state(),
+                'cuda_rng_state': torch.cuda.get_rng_state_all(),
+                'np_rng_state': np.random.get_state(),
+                'py_rng_state': random.getstate(),
             }, latest_path)
             if is_best:
-                shutil.copyfile(latest_path, os.path.join(output_dir, 'ckpt-best.pth'))
+                shutil.copyfile(latest_path, os.path.join(output_dir, 'ckpts', 'ckpt-best.pth'))
 
         # update best val acc
         if val_acc1 > best_val_acc1:
