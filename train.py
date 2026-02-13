@@ -22,7 +22,7 @@ from spikingjelly.activation_based.functional import reset_net
 from datasets import dvs, normal
 from models.factory import build_model
 from modules.optimizers import EiSGD
-from utils.evaluation import AverageMeter, evaluate
+from utils.metrics import AverageMeter, evaluate
 from utils.visualization import Visualizer
 
 def get_args_and_config():
