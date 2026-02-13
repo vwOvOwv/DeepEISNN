@@ -3,9 +3,9 @@
 import torch
 import numpy as np
 
-from .MLP import SpikingMLP, SpikingEiMLP
-from .VGG import SpikingVGG, SpikingEiVGG
-from .ResNet import SpikingResNet, SpikingEiResNet
+from .mlp import SpikingMLP, SpikingEiMLP
+from .vgg import SpikingVGG, SpikingEiVGG
+from .resnet import SpikingResNet, SpikingEiResNet
 
 in_channels_dict = {
     'MNIST': 1,
