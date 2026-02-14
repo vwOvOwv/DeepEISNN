@@ -90,10 +90,10 @@ class SpikingEiNorm1d(nn.Module):
             torch.ones(self.n_e, self.n_i, device=self.device) / self.n_i,
             requires_grad=True,
         )
-        self.alpha = nn.Parameter(
+        self.gain_i = nn.Parameter(
             torch.empty(1, self.n_i, device=self.device), 
             requires_grad=True) # $g_I$ in paper
-        self.gain = nn.Parameter(
+        self.gain_e = nn.Parameter(
             torch.ones(1, self.n_e, device=self.device), 
             requires_grad=True)   # $g_E$ in paper
         self.bias = nn.Parameter(
@@ -112,23 +112,23 @@ class SpikingEiNorm1d(nn.Module):
             E_x = batch_stats['E_x']
             Var_x = batch_stats['Var_x']
             E_x_square = batch_stats['E_x_square']
-            self.alpha.data = torch.ones(1, self.n_i, device=self.device) / \
+            self.gain_i.data = torch.ones(1, self.n_i, device=self.device) / \
                 np.sqrt(self.prev_in_features) * np.sqrt(E_x_square + Var_x) / E_x  # Eq. 54 in paper
 
     def _clamp_parameters(self) -> None:
         """Clamp parameters to be non-negative."""
         with torch.no_grad():
             self.weight_ei.data.clamp_(min=0)
-            self.alpha.data.clamp_(min=0)
-            self.gain.data.clamp_(min=0)
+            self.gain_i.data.clamp_(min=0)
+            self.gain_e.data.clamp_(min=0)
 
     def _set_visualize_cache(self, *args: torch.Tensor) -> None:
         """Cache tensors for visualization."""
         with torch.no_grad():
             I_ei, I_balanced, I_shunting, I_int = args
             self.visualize_cache['param1: weight_ei'] = self.weight_ei.detach()
-            self.visualize_cache['param2: alpha'] = self.alpha.detach()
-            self.visualize_cache['param3: gain'] = self.gain.detach()
+            self.visualize_cache['param2: gain_i'] = self.gain_i.detach()
+            self.visualize_cache['param3: gain_e'] = self.gain_e.detach()
             self.visualize_cache['param4: bias'] = self.bias.detach()
             self.visualize_cache['data1: I_ei'] = I_ei.detach()
             self.visualize_cache['data2: I_balanced'] = I_balanced.detach()
@@ -184,13 +184,13 @@ class SpikingEiNorm1d(nn.Module):
 
         I_shunting = torch.matmul(
             self.weight_ei,
-            (self.alpha * I_ie).T,
+            (self.gain_i * I_ie).T,
         ).T
 
         # Avoid division by zero in shunting term.
         I_shunting_adjusted = self._replace_zero_with_second_min(I_shunting)
 
-        I_int = self.gain * I_balanced / I_shunting_adjusted + self.bias
+        I_int = self.gain_e * I_balanced / I_shunting_adjusted + self.bias
 
         if self._need_visualize:
             self._set_visualize_cache(I_ei, I_balanced, I_shunting_adjusted, I_int)
