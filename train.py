@@ -8,6 +8,8 @@ import time
 from typing import Any, Optional, Sequence
 
 import numpy as np
+if not hasattr(np, 'int'):
+    np.int = int  # Fix for AttributeError: module 'numpy' has no attribute 'int'
 import torch
 from torch import nn
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, LRScheduler
