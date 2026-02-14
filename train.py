@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 import random
 import shutil
 import time
@@ -9,7 +10,7 @@ from typing import Any, Optional, Sequence
 
 import numpy as np
 if not hasattr(np, 'int'):
-    np.int = int  # Fix for AttributeError: module 'numpy' has no attribute 'int'
+    np.int = np.int32  # Fix AttributeError: module 'numpy' has no attribute 'int'
 import torch
 from torch import nn
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, LRScheduler
@@ -436,72 +437,78 @@ if __name__ == '__main__':
         ckpt_save_path = os.path.join(output_dir, 'ckpts')
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path, exist_ok=True)
-    for epoch in range(start_epoch, config['epochs'] + 1):
-        loss, acc1, acc5 = train_one_epoch(
-            model,
-            epoch,
-            config,
-            train_loader,
-            optimizer_list,
-            scheduler_list,
-            warmup_scheduler_list,
-            visualizer,
-            criterion,
-            device,
-        )
-
-        # evaluate the model
-        val_loss, val_acc1, val_acc5 = validate(val_loader, model, criterion, device)
-        is_best = val_acc1 > best_val_acc1
-        best_val_acc1 = max(best_val_acc1, val_acc1)
-
-        # logging and save checkpoints
-        if args.log > 0:
-            log_dict = {
-                'train/loss': loss,
-                'train/acc1': acc1,
-                'train/acc5': acc5,
-                'val/loss': val_loss,
-                'val/acc1': val_acc1,
-                'val/acc5': val_acc5,
-                'train/lr': optimizer_list[0].param_groups[0]['lr'],
-                'epoch': epoch
-            }
-            logger.log(log_dict, step=epoch)
-
-            latest_path = os.path.join(output_dir, 'ckpts', 'ckpt-latest.pth')
-            torch.save(
-                {
-                    'next_epoch': epoch + 1,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': [
-                        optimizer.state_dict() for optimizer in optimizer_list
-                    ],
-                    'warmup_scheduler_state_dict': [
-                        scheduler.state_dict() for scheduler in warmup_scheduler_list
-                    ],
-                    'scheduler_state_dict': [
-                        scheduler.state_dict() for scheduler in scheduler_list
-                    ],
-                    'best_val_acc': best_val_acc1,
-                    'config': config,
-                    'rng_state': torch.get_rng_state(),
-                    'cuda_rng_state': torch.cuda.get_rng_state_all(),
-                    'np_rng_state': np.random.get_state(),
-                    'py_rng_state': random.getstate(),
-                },
-                latest_path,
+    try:
+        for epoch in range(start_epoch, config['epochs'] + 1):
+            loss, acc1, acc5 = train_one_epoch(
+                model,
+                epoch,
+                config,
+                train_loader,
+                optimizer_list,
+                scheduler_list,
+                warmup_scheduler_list,
+                visualizer,
+                criterion,
+                device,
             )
-            if is_best:
-                shutil.copyfile(
+
+            # evaluate the model
+            val_loss, val_acc1, val_acc5 = validate(val_loader, model, criterion, device)
+            is_best = val_acc1 > best_val_acc1
+            best_val_acc1 = max(best_val_acc1, val_acc1)
+
+            # logging and save checkpoints
+            if args.log > 0:
+                log_dict = {
+                    'train/loss': loss,
+                    'train/acc1': acc1,
+                    'train/acc5': acc5,
+                    'val/loss': val_loss,
+                    'val/acc1': val_acc1,
+                    'val/acc5': val_acc5,
+                    'train/lr': optimizer_list[0].param_groups[0]['lr'],
+                    'epoch': epoch
+                }
+                logger.log(log_dict, step=epoch)
+
+                latest_path = os.path.join(output_dir, 'ckpts', 'ckpt-latest.pth')
+                torch.save(
+                    {
+                        'next_epoch': epoch + 1,
+                        'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': [
+                            optimizer.state_dict() for optimizer in optimizer_list
+                        ],
+                        'warmup_scheduler_state_dict': [
+                            scheduler.state_dict() for scheduler in warmup_scheduler_list
+                        ],
+                        'scheduler_state_dict': [
+                            scheduler.state_dict() for scheduler in scheduler_list
+                        ],
+                        'best_val_acc': best_val_acc1,
+                        'config': config,
+                        'rng_state': torch.get_rng_state(),
+                        'cuda_rng_state': torch.cuda.get_rng_state_all(),
+                        'np_rng_state': np.random.get_state(),
+                        'py_rng_state': random.getstate(),
+                    },
                     latest_path,
-                    os.path.join(output_dir, 'ckpts', 'ckpt-best.pth'),
                 )
+                if is_best:
+                    shutil.copyfile(
+                        latest_path,
+                        os.path.join(output_dir, 'ckpts', 'ckpt-best.pth'),
+                    )
 
-    print("Train finished")
-    print(f"Best validation accuracy: {best_val_acc1:.3f}")
-    print(f"Log directory: {output_dir if args.log > 0 else 'None'}")
-    print(f"Args: {args}")
+        print("Train finished")
+        print(f"Best validation accuracy: {best_val_acc1:.3f}")
+        print(f"Log directory: {output_dir if args.log > 0 else 'None'}")
+        print(f"Args: {args}")
 
-    if visualizer is not None:
-        visualizer.png2mp4()
+        if visualizer is not None:
+            visualizer.png2mp4()
+
+    finally:
+        if args.log > 0:
+            wandb.finish()
+        sys.exit(0)

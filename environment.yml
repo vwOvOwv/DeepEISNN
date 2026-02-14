@@ -1,0 +1,27 @@
+name: deepeisnn
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12.10
+  - cuda-version=12.6
+  - cudnn=9.3.0.75
+  - pytorch=2.4.1
+  - torchvision=0.19.1
+  - triton=3.1.0
+  - mkl=2023.2.0
+  - numpy=1.26.4
+  - scipy=1.15.2
+  - pip
+
+  - pip:
+    - imageio==2.37.0
+    - matplotlib==3.10.0
+    - numpy==1.26.4
+    - pillow==11.1.0
+    - PyYAML==6.0.2
+    - spikingjelly==0.0.0.0.14
+    - torchinfo==1.8.0
+    - torchtoolbox==0.1.8.2
+    - tqdm==4.67.1
+    - wandb==0.23.1
