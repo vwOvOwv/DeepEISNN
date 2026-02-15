@@ -7,6 +7,17 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
 ## Table of Contents
 
+- [🚀 Quick Start](#-quick-start)
+  - [Environment setup](#environment-setup)
+  - [Train from scratch](#train-from-scratch)
+  - [Resume from checkpoints](#resume-from-checkpoints)
+- [🎓 Learn More about E-I Interaction](#-learn-more-about-e-i-interaction)
+  - [Code Structure](#code-structure)
+  - [Usage](#usage)
+  - [Visualization](#visualization)
+- [Citation](#citation)
+- [Contact](#contact)
+
 ## 🚀 Quick Start
 
 ### Environment setup
@@ -21,22 +32,27 @@ All experiments are conducted with
 Create the conda environment with the following command:
 
 ```bash
-conda create -f environment.yml
+conda env create -f environment.yml
+conda activate deepeisnn
 ```
 
 ### Train from scratch
 
 We provide all training configurations in `configs/EI-SNN`.
 
-Simply run the following command to reproduce the results on CIFAR-10 with ResNet-18 in the paper.
+Simply run the following command to reproduce the results on CIFAR-10 with
+ResNet-18 in the paper.
 
 ```bash
 python train.py --scratch configs/EI-SNN/CIFAR10-ResNet18.yaml
 ```
 
-Please modify `data_path` and `output_dir` in the configuration file before training.
+Please modify `data_path` and `output_dir` in the configuration file before
+training.
 
-Other configuration files are also named in the format of `[Dataset]-[Arch].yaml`. See `configs/EI-SNN` for more details.
+Other configuration files are also named in the format of
+`[Dataset]-[Arch].yaml`. See `configs/EI-SNN` and `configs/BN-SNN` for more
+examples.
 
 ### Resume from checkpoints
 
@@ -52,7 +68,27 @@ Below is detailed information about this repo, which may help further research o
 
 ### Code Structure
 
+```text
+DeepEISNN/
+├── configs/            # YAML configs for EI-SNN and BN-SNN
+│   ├── EI-SNN/         # EI-SNN experiment configs
+│   └── BN-SNN/         # BN-SNN experiment configs
+├── datasets/           # dataset loaders and preprocessing
+├── models/             # MLP/VGG/ResNet architectures
+├── modules/            # layers, normalizations, and optimizers
+├── utils/              # metrics, visualization, etc.
+└── train.py            # training script
+```
+
 ### Usage
+
+Key arguments in `train.py`:
+
+- `--scratch <config.yaml>`: train from scratch
+- `--resume <ckpt.pth>`: resume training
+- `--log {0,1,2}`: logging level
+- `--notes <str>`: append notes to the run name
+- `--seed <int>`: random seed (default 2025)
 
 ### Visualization
 
@@ -70,23 +106,22 @@ python train.py --scratch configs/EI-SNN/[Dataset]-[Arch].yaml --log 2
 
 👀 See how bimodality emerges during training here!
 
-<!-- TODO -->
-
 ## Citation
 
 If this work is helpful, please kindly cite as:
 
 ```bibtex
 @inproceedings{
-liu2026training,
-title={Training Deep Normalization-Free Spiking Neural Networks with Lateral Inhibition},
-author={Peiyu Liu and Jianhao Ding and Zhaofei Yu},
-booktitle={The Fourteenth International Conference on Learning Representations},
-year={2026},
-url={https://openreview.net/forum?id=U8preGvn5G}
+  liu2026training,
+  title={Training Deep Normalization-Free Spiking Neural Networks with Lateral Inhibition},
+  author={Peiyu Liu and Jianhao Ding and Zhaofei Yu},
+  booktitle={The Fourteenth International Conference on Learning Representations},
+  year={2026},
+  url={https://openreview.net/forum?id=U8preGvn5G}
 }
 ```
 
 ## Contact
 
-If you have any questions, please feel free to contact me via [email](mailto:512120lpy@stu.pku.edu.cn) or raise an issue.
+If you have any questions, please feel free to contact me via
+[email](mailto:512120lpy@stu.pku.edu.cn) or raise an issue.
