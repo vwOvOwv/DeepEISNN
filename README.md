@@ -15,6 +15,7 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
   - [Code Structure](#code-structure)
   - [Usage](#usage)
   - [Visualization](#visualization)
+- [Checkpoints](#checkpoints)
 - [Citation](#citation)
 - [Contact](#contact)
 
@@ -128,6 +129,8 @@ python train.py --scratch configs/EI-SNN/[Dataset]-[Arch].yaml --log 2
 ```
 
 👀 See how bimodality emerges during training!
+
+## Checkpoints
 
 ## Citation
 
