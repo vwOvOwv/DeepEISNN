@@ -3,7 +3,7 @@
 Code for paper [Training Deep Normalization-Free Spiking Neural Networks with
 Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
-![overview](assets/overview.svg)
+![overview](assets/overview.png)
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ All experiments are conducted with
 - CUDA 12.6
 - PyTorch 2.4.1
 
-Detailed environment setup can be found in `environment.yml`. Create the conda environment with the following command:
+Create the conda environment with the following command:
 
 ```bash
 conda create -f environment.yml
@@ -33,9 +33,10 @@ Simply run the following command to reproduce the results on CIFAR-10 with ResNe
 ```bash
 python train.py --scratch configs/EI-SNN/CIFAR10-ResNet18.yaml
 ```
+
 Please modify `data_path` and `output_dir` in the configuration file before training.
 
-All configuration files are named in the format of `[Dataset]-[Arch].yaml`. See `configs/EI-SNN` for more details.
+Other configuration files are also named in the format of `[Dataset]-[Arch].yaml`. See `configs/EI-SNN` for more details.
 
 ### Resume from checkpoints
 
@@ -47,7 +48,7 @@ python train.py --resume [Checkpoint-Path]
 
 ## 🎓 Learn More about E-I Interaction
 
-Below is detailed information about this repo, which may help further research on E-I dynamics based on this code.
+Below is detailed information about this repo, which may help further research on E-I dynamics based on our work.
 
 ### Code Structure
 
@@ -86,4 +87,6 @@ url={https://openreview.net/forum?id=U8preGvn5G}
 }
 ```
 
-## 
+## Contact
+
+If you have any questions, please feel free to contact me via [email](mailto:512120lpy@stu.pku.edu.cn) or raise an issue.
