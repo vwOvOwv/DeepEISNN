@@ -80,6 +80,17 @@ DeepEISNN/
 └── train.py            # training script
 ```
 
+To keep consistent with standard `Conv/Linear-Norm-Activation` structure, we split 
+the E-I layer into `EiConv/EiLinear-EiNorm-Activation`:
+
+- `modules/linear.py`: `SpikingEiLinear` implements E-I linear layers with separate E-to-E and E-to-I pathways, the dynamic initialization, and non-negative clamping.
+- `modules/conv2d.py`: `SpikingEiConv2d` is the convolutional counterpart to `SpikingEiLinear`.
+- `modules/norm1d.py` and `modules/norm2d.py`: `SpikingEiNorm1d/2d` integrate E/I currents via E-I balance and gain control without explicit mean/variance normalization.
+
+We also implement an SGD optimizer for E-I models:
+
+- `modules/optimizers.py`: `EiSGD` is an SGD variant with optional non-negative clamping for E-I constraints.
+
 ### Usage
 
 Key arguments in `train.py`:
@@ -90,9 +101,22 @@ Key arguments in `train.py`:
 - `--notes <str>`: append notes to the run name
 - `--seed <int>`: random seed (default 2025)
 
+To build E-I models, you can either use the provided E-I configs (set `type: EI-SNN`
+and `ei_ratio`, see `configs/EI-SNN/*.yaml`), or use the E-I modules in your own model definition. The E-I modules follow the same `Conv/Linear-Norm-Activation` pattern, but require extra arguments and pass E-I currents between modules:
+
+- `SpikingConv2d` -> `SpikingEiConv2d(in_channels, out_channels, ei_ratio, device, rng, ...)`
+- `SpikingLinear` -> `SpikingEiLinear(in_features, out_features, ei_ratio, device, rng, ...)`
+- `SpikingBatchNorm2d` -> `SpikingEiNorm2d(num_features, prev_in_features, ei_ratio, device)`
+- `SpikingBatchNorm1d` -> `SpikingEiNorm1d(num_features, prev_in_features, ei_ratio, device)` (set `output_layer=True` for the final norm)
+
+Here, `prev_in_features` is the fan-in ($d$ in the paper) of the previous layer (for conv, `in_channels * kernel_size * kernel_size`; for linear, `in_features`). 
+
+Keep the E-I module sequence as `EiConv/EiLinear -> EiNorm -> activation` because `EiConv/EiLinear` return `(I_ee, I_ie, batch_stats)` for `EiNorm`. Note that `EiNorm` does not collect statistics to perform explicit normalization during training.
+
 ### Visualization
 
 We provide visualization demonstrating evolving distributions of 
+
 - all trainable parameters
 - inputs/outputs of all layers
 
