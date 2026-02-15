@@ -505,10 +505,9 @@ if __name__ == '__main__':
         print(f"Log directory: {output_dir if args.log > 0 else 'None'}")
         print(f"Args: {args}")
 
-        if visualizer is not None:
-            visualizer.png2mp4()
-
     finally:
         if args.log > 0:
             wandb.finish()
+        if visualizer is not None:
+            visualizer.png2mp4()
         sys.exit(0)

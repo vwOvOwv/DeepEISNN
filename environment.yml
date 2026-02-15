@@ -16,6 +16,8 @@ dependencies:
 
   - pip:
     - imageio==2.37.0
+    - imageio-ffmpeg==0.6.0
+    - psutil==7.2.2
     - matplotlib==3.10.0
     - numpy==1.26.4
     - pillow==11.1.0
