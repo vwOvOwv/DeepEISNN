@@ -1,6 +1,6 @@
 # data
 dataset: CIFAR10
-data_path: /home/data4T1/lpy/datasets/cifar10
+data_path: /path/to/datasets
 
 # model
 type: EI-SNN
@@ -25,4 +25,4 @@ scheduler: CosALR
 loss: CE
 
 # logging
-output_dir: /home/data4T1/lpy/DeepEISNN/logs/EI-SNN
+output_dir: /path/to/output

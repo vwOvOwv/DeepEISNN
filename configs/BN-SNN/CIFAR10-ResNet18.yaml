@@ -1,6 +1,6 @@
 # data
 dataset: CIFAR10
-data_path: /home/data4T1/lpy/datasets/cifar10
+data_path: /path/to/datasets
 
 # model
 type: BN-SNN
@@ -23,4 +23,4 @@ scheduler: CosALR
 loss: CE
 
 # logging
-output_dir: /home/data4T1/lpy/DeepEISNN/logs/BN-SNN
+output_dir: /path/to/output
