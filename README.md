@@ -110,7 +110,7 @@ To build E-I models, you can either use the provided E-I configs or use the E-I 
 
 Here, `prev_in_features` is the fan-in ($d$ in the paper) of the `SpikingEiConv2d/Linear` layer. 
 
-When constructing model, keep the E-I module sequence as `EiConv/EiLinear-EiNorm-Activation`. Note that `EiNorm` does not collect statistics to perform explicit normalization during training.
+When constructing your own model, keep the E-I module sequence as `EiConv/EiLinear-EiNorm-Activation`. Note that `EiNorm` does not collect statistics to perform explicit normalization during training.
 
 ### Visualization
 
@@ -127,7 +127,7 @@ Simply add `--log 2` in the shell command to enable visualization. For example:
 python train.py --scratch configs/EI-SNN/[Dataset]-[Arch].yaml --log 2
 ```
 
-👀 See how bimodality emerges during training here!
+👀 See how bimodality emerges during training!
 
 ## Citation
 
