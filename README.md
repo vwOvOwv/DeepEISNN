@@ -1,6 +1,7 @@
 # DeepEISNN
 
-<!-- TODO: add openreview and hugging face badge -->
+[![OpenReview](https://img.shields.io/badge/OpenReview-Paper-paper.svg)](https://openreview.net/pdf?id=U8preGvn5G)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-ffcc00.svg)](https://huggingface.co/vwOvOwv/DeepEISNN)
 
 Code for paper [Training Deep Normalization-Free Spiking Neural Networks with
 Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
@@ -14,7 +15,7 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
   - [Train from scratch](#train-from-scratch)
   - [Resume from checkpoints](#resume-from-checkpoints)
 - [🎓 Learn More about E-I Interaction](#-learn-more-about-e-i-interaction)
-  - [Code Structure](#code-structure)
+  - [Code structure](#code-structure)
   - [Usage](#usage)
   - [Visualization](#visualization)
 - [Checkpoints](#checkpoints)
@@ -69,7 +70,7 @@ python train.py --resume [Checkpoint-Path]
 
 Below is detailed information about this repo, which may help further research on E-I dynamics based on our work.
 
-### Code Structure
+### Code structure
 
 ```text
 DeepEISNN/
@@ -135,6 +136,34 @@ python train.py --scratch configs/EI-SNN/[Dataset]-[Arch].yaml --log 2
 ![distribution](assets/distribution.gif)
 
 ## Checkpoints
+
+All pretrained checkpoints are available on [Hugging Face](https://huggingface.co/vwOvOwv/DeepEISNN).
+
+
+### Evaluation
+
+Use the following command to quickly evaluate the pretrained checkpoints on the evaluation set.
+
+```bash
+python eval_pretrained.py --model [Dataset]-[Arch] --data_path [Dataset-Path] 
+```
+
+### Model cards
+
+| Dataset | Arch | T| Top-1 Acc(%) |
+|:---------:|:--------------:|:----:|:----------:|
+| CIFAR-10 | ResNet-18 | 4 | 92.06 |
+| CIFAR-10 | VGG-8 | 4 | 87.03|
+| CIFAR-10 | VGG-11 | 4 | 88.43|
+| CIFAR-10 | VGG-16 | 4 | 91.01|
+| CIFAR-10 | VGG-19 | 4 | 91.36|
+| CIFAR-100 | VGG-16 | 4 | 65.90|
+| CIFAR-100 | VGG-19 | 4 | 64.06|
+| CIFAR10-DVS| VGG-8 | 10 | 78.40|
+| CIFAR10-DVS| VGG-11 | 10 |78.40|
+| DVS-Gesture | VGG-8 | 16 | 95.83 |
+| TinyImageNet200 | ResNet-18 | 4 | 50.29 |
+
 
 ## Citation
 
