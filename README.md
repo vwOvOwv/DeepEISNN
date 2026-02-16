@@ -147,7 +147,7 @@ All pretrained checkpoints are available on [Hugging Face](https://huggingface.c
 Use the following command to quickly evaluate the pretrained checkpoints on the evaluation set.
 
 ```bash
-python eval_pretrained.py --model [Dataset]-[Arch] --data_path [Dataset-Path] 
+python eval_pretrained.py --model [Dataset]-[Arch] --data_path [Dataset-Path]
 ```
 
 The script will automatically download the corresponding weights from Hugging Face.
