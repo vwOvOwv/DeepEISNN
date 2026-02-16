@@ -31,7 +31,7 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 All experiments are conducted with
 
 - Python 3.12.10
-- NVIDIA GeForce RTX 4090 GPU
+- NVIDIA GeForce RTX 4090 GPUs
 - CUDA 12.6
 - PyTorch 2.4.1
 
