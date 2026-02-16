@@ -24,7 +24,7 @@ def get_model_and_config():
     parser = argparse.ArgumentParser(description="Load Pretrained DeepEISNN Model")
     parser.add_argument('--model', type=str, default="CIFAR10-VGG8",
                         help="Pretrained model name, in the format [Dataset]-[Arch]")
-    parser.add_argument('--data_path', type=str, required=True,
+    parser.add_argument('--data_path', type=str,
                         default="/home/data4T1/lpy/datasets/cifar10",
                         help="Local path to the dataset (override default config)")
     try:
