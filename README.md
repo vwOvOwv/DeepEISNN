@@ -30,8 +30,8 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
 All experiments are conducted with
 
-- NVIDIA GeForce RTX 4090 GPU
 - Python 3.12.10
+- NVIDIA GeForce RTX 4090 GPU
 - CUDA 12.6
 - PyTorch 2.4.1
 
@@ -154,19 +154,19 @@ The script will automatically download the corresponding weights from Hugging Fa
 
 ### Model cards
 
-| Dataset | Arch | T | Top-1 Acc(%) |
-|:---:|:---:|:---:|:---:|
-| CIFAR-10 | ResNet-18 | 4 | 92.06 |
-| CIFAR-10 | VGG-8 | 4 | 87.03 |
-| CIFAR-10 | VGG-11 | 4 | 88.43 |
-| CIFAR-10 | VGG-16 | 4 | 91.01 |
-| CIFAR-10 | VGG-19 | 4 | 91.36 |
-| CIFAR-100 | VGG-16 | 4 | 65.90 |
-| CIFAR-100 | VGG-19 | 4 | 64.06 |
-| CIFAR10-DVS | VGG-8 | 10 | 78.40 |
-| CIFAR10-DVS | VGG-11 | 10 | 78.40 |
-| DVS-Gesture | VGG-8 | 16 | 95.83 |
-| TinyImageNet200 | ResNet-18 | 4 | 50.29 |
+| Dataset | Arch | T | Top-1 Acc(%) | Model Name|
+|:---:|:---:|:---:|:---:|:---:|
+| CIFAR-10 | ResNet-18 | 4 | 92.06 | CIFAR10-ResNet18 |
+| CIFAR-10 | VGG-8 | 4 | 87.03 | CIFAR10-VGG8 |
+| CIFAR-10 | VGG-11 | 4 | 88.43 | CIFAR10-VGG11 |
+| CIFAR-10 | VGG-16 | 4 | 91.01 | CIFAR10-VGG16 |
+| CIFAR-10 | VGG-19 | 4 | 91.36 | CIFAR10-VGG19 |
+| CIFAR-100 | VGG-16 | 4 | 65.90 | CIFAR100-VGG16 |
+| CIFAR-100 | VGG-19 | 4 | 64.06 | CIFAR100-VGG19 |
+| CIFAR10-DVS | VGG-8 | 10 | 78.40 | CIFAR10DVS-VGG8 |
+| CIFAR10-DVS | VGG-11 | 10 | 78.40 | CIFAR10DVS-VGG11 |
+| DVS-Gesture | VGG-8 | 16 | 95.83 | DVSGesture-VGG8 |
+| TinyImageNet200 | ResNet-18 | 4 | 50.29 | TinyImageNet200-ResNet18 |
 
 ## Citation
 
