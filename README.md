@@ -1,6 +1,6 @@
 # DeepEISNN
 
-[![OpenReview](https://img.shields.io/badge/OpenReview-Paper-paper.svg)](https://openreview.net/pdf?id=U8preGvn5G)
+[![OpenReview](https://img.shields.io/badge/OpenReview-Paper-8c1515.svg)](https://openreview.net/forum?id=U8preGvn5G)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-ffcc00.svg)](https://huggingface.co/vwOvOwv/DeepEISNN)
 
 Code for paper [Training Deep Normalization-Free Spiking Neural Networks with
@@ -19,6 +19,8 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
   - [Usage](#usage)
   - [Visualization](#visualization)
 - [Checkpoints](#checkpoints)
+  - [Evaluation](#evaluation)
+  - [Model cards](#model-cards)
 - [Citation](#citation)
 - [Contact](#contact)
 
@@ -148,22 +150,23 @@ Use the following command to quickly evaluate the pretrained checkpoints on the 
 python eval_pretrained.py --model [Dataset]-[Arch] --data_path [Dataset-Path] 
 ```
 
+The script will automatically download the corresponding weights from Hugging Face.
+
 ### Model cards
 
-| Dataset | Arch | T| Top-1 Acc(%) |
-|:---------:|:--------------:|:----:|:----------:|
+| Dataset | Arch | T | Top-1 Acc(%) |
+|:---:|:---:|:---:|:---:|
 | CIFAR-10 | ResNet-18 | 4 | 92.06 |
-| CIFAR-10 | VGG-8 | 4 | 87.03|
-| CIFAR-10 | VGG-11 | 4 | 88.43|
-| CIFAR-10 | VGG-16 | 4 | 91.01|
-| CIFAR-10 | VGG-19 | 4 | 91.36|
-| CIFAR-100 | VGG-16 | 4 | 65.90|
-| CIFAR-100 | VGG-19 | 4 | 64.06|
-| CIFAR10-DVS| VGG-8 | 10 | 78.40|
-| CIFAR10-DVS| VGG-11 | 10 |78.40|
+| CIFAR-10 | VGG-8 | 4 | 87.03 |
+| CIFAR-10 | VGG-11 | 4 | 88.43 |
+| CIFAR-10 | VGG-16 | 4 | 91.01 |
+| CIFAR-10 | VGG-19 | 4 | 91.36 |
+| CIFAR-100 | VGG-16 | 4 | 65.90 |
+| CIFAR-100 | VGG-19 | 4 | 64.06 |
+| CIFAR10-DVS | VGG-8 | 10 | 78.40 |
+| CIFAR10-DVS | VGG-11 | 10 | 78.40 |
 | DVS-Gesture | VGG-8 | 16 | 95.83 |
 | TinyImageNet200 | ResNet-18 | 4 | 50.29 |
-
 
 ## Citation
 
