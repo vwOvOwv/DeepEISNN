@@ -1,5 +1,7 @@
 # DeepEISNN
 
+<!-- TODO: add openreview and hugging face badge -->
+
 Code for paper [Training Deep Normalization-Free Spiking Neural Networks with
 Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
@@ -99,7 +101,7 @@ Key arguments in `train.py`:
 - `--scratch <config.yaml>`: train from scratch
 - `--resume <ckpt.pth>`: resume training
 - `--log {0,1,2}`: logging level
-- `--notes <str>`: append notes to the run name
+- `--notes <str>`: add notes about experiment
 - `--seed <int>`: random seed (default 2025)
 
 To build E-I models, you can either use the provided E-I configs or use the E-I modules in your own model definition. The E-I modules follow the `Conv/Linear-Norm-Activation` convention, but require extra arguments and pass E-I currents between modules:
@@ -129,6 +131,8 @@ python train.py --scratch configs/EI-SNN/[Dataset]-[Arch].yaml --log 2
 ```
 
 👀 See how bimodality emerges during training!
+
+![distribution](assets/distribution.gif)
 
 ## Checkpoints
 
