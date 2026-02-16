@@ -83,7 +83,7 @@ DeepEISNN/
 ├── models/             # MLP/VGG/ResNet architectures
 ├── modules/            # layers, normalizations, and optimizers
 ├── utils/              # metrics, visualization, etc.
-├── eval_pretrained.py  # evaluate pretrined checkpoints
+├── eval_pretrained.py  # evaluate pretrained checkpoints
 └── train.py            # training script
 ```
 
