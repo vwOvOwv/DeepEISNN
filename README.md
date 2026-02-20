@@ -8,7 +8,7 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
 ![overview](assets/overview.png)
 
-## Table of Contents
+## Table of Content
 
 - [🚀 Quick Start](#-quick-start)
   - [Environment setup](#environment-setup)
