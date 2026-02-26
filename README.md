@@ -113,7 +113,7 @@ To build E-I models, you can either use the provided E-I configs or use the E-I 
 - `Conv2d` -> `SpikingEiConv2d(in_channels, out_channels, ei_ratio, device, rng, ...)`
 - `Linear` -> `SpikingEiLinear(in_features, out_features, ei_ratio, device, rng, ...)`
 - `BatchNorm2d` -> `SpikingEiNorm2d(num_features, prev_in_features, ei_ratio, device)`
-- `BatchNorm1d` -> `SpikingEiNorm1d(num_features, prev_in_features, ei_ratio, device, output_layer)` (set `output_layer=True` for the final norm)
+- `BatchNorm1d` -> `SpikingEiNorm1d(num_features, prev_in_features, ei_ratio, device, output_layer)` (set `output_layer=True` for the final layer)
 
 Here, `prev_in_features` is the fan-in ($d$ in the paper) of the `SpikingEiConv2d/Linear` layer. 
 
