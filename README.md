@@ -8,7 +8,7 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
 ![overview](assets/overview.png)
 
-## Table of Content
+## Table of Contents
 
 - [DeepEISNN](#deepeisnn)
   - [Table of Contents](#table-of-contents)
