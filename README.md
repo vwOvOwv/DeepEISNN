@@ -10,19 +10,21 @@ Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
 
 ## Table of Contents
 
-- [🚀 Quick Start](#-quick-start)
-  - [Environment setup](#environment-setup)
-  - [Train from scratch](#train-from-scratch)
-  - [Resume from checkpoints](#resume-from-checkpoints)
-- [🎓 Learn More about E-I Interaction](#-learn-more-about-e-i-interaction)
-  - [Code structure](#code-structure)
-  - [Usage](#usage)
-  - [Visualization](#visualization)
-- [Checkpoints](#checkpoints)
-  - [Evaluation](#evaluation)
-  - [Model cards](#model-cards)
-- [Citation](#citation)
-- [Contact](#contact)
+- [DeepEISNN](#deepeisnn)
+  - [Table of Contents](#table-of-contents)
+  - [🚀 Quick Start](#-quick-start)
+    - [Environment setup](#environment-setup)
+    - [Train from scratch](#train-from-scratch)
+    - [Resume from checkpoints](#resume-from-checkpoints)
+  - [🎓 Learn More about E-I Interaction](#-learn-more-about-e-i-interaction)
+    - [Code structure](#code-structure)
+    - [Usage](#usage)
+    - [Visualization](#visualization)
+  - [Checkpoints](#checkpoints)
+    - [Evaluation](#evaluation)
+    - [Model cards](#model-cards)
+  - [Citation](#citation)
+  - [Contact](#contact)
 
 ## 🚀 Quick Start
 
@@ -168,6 +170,7 @@ The script will automatically download the corresponding weights from Hugging Fa
 | CIFAR10-DVS | VGG-11 | 10 | 78.40 | CIFAR10DVS-VGG11 |
 | DVS-Gesture | VGG-8 | 16 | 95.83 | DVSGesture-VGG8 |
 | TinyImageNet200 | ResNet-18 | 4 | 50.29 | TinyImageNet200-ResNet18 |
+| ImageNet1k | ResNet-18 | 4 | 44.64 |ImageNet1k-ResNet18|
 
 ## Citation
 
