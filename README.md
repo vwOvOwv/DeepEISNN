@@ -110,16 +110,14 @@ Key arguments in `train.py`:
 - `--notes <str>`: add notes about experiment
 - `--seed <int>`: random seed (default 2025)
 
-To build E-I models, you can either use the provided E-I configs or use the E-I modules in your own model. The E-I modules follow the `Conv/Linear-Norm-Activation` convention, but require extra arguments and pass E-I currents between modules:
+To build E-I models, you can either use the provided E-I configs or use the E-I modules in your own model. The E-I modules follow the `Conv/Linear-Norm-Activation` convention:
 
-- `Conv2d` -> `SpikingEiConv2d(in_channels, out_channels, ei_ratio, device, rng, ...)`
-- `Linear` -> `SpikingEiLinear(in_features, out_features, ei_ratio, device, rng, ...)`
-- `BatchNorm2d` -> `SpikingEiNorm2d(num_features, prev_in_features, ei_ratio, device)`
-- `BatchNorm1d` -> `SpikingEiNorm1d(num_features, prev_in_features, ei_ratio, device, output_layer)` (set `output_layer=True` for the final layer)
+- `Conv2d` -> `SpikingEiConv2d`
+- `Linear` -> `SpikingEiLinear`
+- `BatchNorm2d` -> `SpikingEiNorm2d`
+- `BatchNorm1d` -> `SpikingEiNorm1d` (set `output_layer=True` for the final layer)
 
 Here, `prev_in_features` is the fan-in ($d$ in the paper) of the `SpikingEiConv2d/Linear` layer. 
-
-When constructing your own model, keep the E-I module sequence as `EiConv/EiLinear-EiNorm-Activation`. Note that `EiNorm` does not collect statistics to perform explicit normalization during training.
 
 ### Visualization
 
