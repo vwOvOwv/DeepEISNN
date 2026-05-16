@@ -89,17 +89,6 @@ DeepEISNN/
 └── train.py            # training script
 ```
 
-To keep consistent with standard `Conv/Linear-Norm-Activation` structure, we split 
-the E-I layer into `EiConv/EiLinear-EiNorm-Activation`:
-
-- `modules/linear.py`: `SpikingEiLinear` implements E-I linear layers with separate E-to-E and E-to-I pathways, the dynamic initialization, and non-negative clamping.
-- `modules/conv2d.py`: `SpikingEiConv2d` is the convolutional counterpart to `SpikingEiLinear`.
-- `modules/norm1d.py` and `modules/norm2d.py`: `SpikingEiNorm1d/2d` integrate E-I currents via E-I balance and gain control.
-
-We also implement an SGD optimizer for E-I models:
-
-- `modules/optimizers.py`: `EiSGD` is an SGD variant with optional non-negative clamping for E-I constraints.
-
 ### Usage
 
 Key arguments in `train.py`:
