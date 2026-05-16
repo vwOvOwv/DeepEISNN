@@ -110,7 +110,7 @@ Key arguments in `train.py`:
 - `--notes <str>`: add notes about experiment
 - `--seed <int>`: random seed (default 2025)
 
-To build E-I models, you can either use the provided E-I configs or use the E-I modules in your own model definition. The E-I modules follow the `Conv/Linear-Norm-Activation` convention, but require extra arguments and pass E-I currents between modules:
+To build E-I models, you can either use the provided E-I configs or use the E-I modules in your own model. The E-I modules follow the `Conv/Linear-Norm-Activation` convention, but require extra arguments and pass E-I currents between modules:
 
 - `Conv2d` -> `SpikingEiConv2d(in_channels, out_channels, ei_ratio, device, rng, ...)`
 - `Linear` -> `SpikingEiLinear(in_features, out_features, ei_ratio, device, rng, ...)`
