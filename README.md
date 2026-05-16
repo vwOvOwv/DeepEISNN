@@ -4,7 +4,7 @@
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-ffcc00.svg)](https://huggingface.co/vwOvOwv/DeepEISNN)
 
 Code for paper [Training Deep Normalization-Free Spiking Neural Networks with
-Lateral Inhibition](https://openreview.net/pdf?id=U8preGvn5G).
+Lateral Inhibition](https://openreview.net/forum?id=U8preGvn5G).
 
 ![overview](assets/overview.png)
 
